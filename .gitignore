@@ -47,3 +47,8 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Repository-local package development dependencies and check output
+.r-lib/
+.test-tmp/
+.check/

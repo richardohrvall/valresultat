@@ -1,0 +1,31 @@
+Package: valresultat
+Title: Read and Harmonise Swedish Election Results
+Version: 0.0.0.9000
+Authors@R: person("Richard", "Öhrvall", email = "richard.ohrvall@gmail.com",
+    role = c("aut", "cre"))
+Description: Downloads, archives and parses Swedish election data published by
+    Valmyndigheten. Provides analysis-friendly tables of candidacies, candidates,
+    mandates and substitute relationships, alongside parsers for vote results
+    and personal votes. Supports local raw-data archives and remote sources.
+    Active development currently focuses on the 2026 parliamentary, regional
+    and municipal elections.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends:
+    R (>= 4.1.0)
+Imports:
+    dplyr (>= 1.2.0),
+    janitor,
+    jsonlite,
+    purrr (>= 1.0.0),
+    readr,
+    stringr,
+    tibble,
+    tools,
+    utils
+Suggests:
+    roxygen2,
+    testthat (>= 3.2.0)
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.1.0
