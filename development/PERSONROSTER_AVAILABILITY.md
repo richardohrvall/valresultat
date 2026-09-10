@@ -1,6 +1,7 @@
 # Föreslagen regel för personrösternas tillgänglighet
 
-Detta är ett förslag, inte implementerad logik. Underlaget är repots
+Regeln har godkänts och implementerats i `R/personroster_availability_2026.R`.
+Statusen hålls intern, utan nya publika argument eller kolumner. Underlaget är repots
 `references/slut-rostfordelning.md`, daterat 2026-04-17. Beskrivningen anger
 fältnamn och typer men definierar inte fullständigt vad utelämnade fält eller
 tomma listor betyder. Följande är därför en konservativ paketregel, inte ett
@@ -101,9 +102,11 @@ En partiell summa presenteras aldrig som fullständig total.
 Regeln är avsiktligt strikt och kan ge NA för användbara filer om källan
 utelämnar nollpartier/nolllistor. Den behöver verifieras med små godkända
 källrepresentativa exempel, särskilt för uppsamlingsdistrikt, tomma arrayer
-och hur distriktsräknarna relaterar till arrayen. Ingen rådata utanför repot
-har lästs och ingen ändring av personröstberäkningen har gjorts här.
+och hur distriktsräknarna relaterar till arrayen. Implementations- och
+integrationsresultat finns i `PERSONROSTER_IMPLEMENTATION.md` och
+`PERSONROSTER_INTEGRATION.txt`. Befintliga filer har där lästs read-only
+efter uttryckligt tillstånd.
 
-Framtida tester bör täcka saknat/null/[] separat, nollröster, saknad kandidat
+De deterministiska testerna täcker saknat/null/[] separat, nollröster, saknad kandidat
 i komplett data, partiell rapportering, saknat parti, felaktiga tal, dubbla
 nycklar samt motsägelser mellan listnivå och summerad nivå.

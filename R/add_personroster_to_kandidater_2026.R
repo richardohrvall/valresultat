@@ -66,7 +66,7 @@ add_personroster_to_kandidater_2026 <- function(
     dplyr::summarise(
       antal_personroster_totalt = sum(
         antal_personroster,
-        na.rm = TRUE
+        na.rm = FALSE
       ),
       .by = c(
         kandidatnummer,
@@ -75,6 +75,10 @@ add_personroster_to_kandidater_2026 <- function(
       )
     )
 
+  # Denna äldre interna hjälpare saknar kandidaturernas områdeskoppling.
+  # Utan explicit kandidatvis täckningsbevis får den inte anta full täckning.
+  available <- attr(personroster_summerade, "personroster_available", exact = TRUE)
+  personroster_totalt$.personrost_rad <- TRUE
   out <- kandidater |>
     dplyr::left_join(
       personroster_totalt,
@@ -83,13 +87,17 @@ add_personroster_to_kandidater_2026 <- function(
         valtyp,
         partikod
       )
-    ) |>
-    dplyr::mutate(
-      antal_personroster_totalt = dplyr::coalesce(
-        antal_personroster_totalt,
-        0L
-      )
     )
+  if (is.data.frame(available)) {
+    out <- dplyr::left_join(out, available,
+      by = dplyr::join_by(kandidatnummer, valtyp, partikod), relationship = "many-to-one")
+    out$antal_personroster_totalt <- ifelse(out$personroster_available %in% TRUE,
+      ifelse(is.na(out$.personrost_rad), 0L, out$antal_personroster_totalt), NA_integer_)
+    out$personroster_available <- NULL
+  } else {
+    out$antal_personroster_totalt <- rep(NA_integer_, nrow(out))
+  }
+  out$.personrost_rad <- NULL
 
   personval_available <- attr(
     personval,

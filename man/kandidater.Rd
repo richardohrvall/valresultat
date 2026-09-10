@@ -50,6 +50,12 @@ Skapar en analysvänlig kandidatfil.
 En rad motsvarar kandidatnummer × valtyp × parti. Kandidater som
 ställer upp på flera politiska nivåer eller för flera partier kan därför
 förekomma på flera rader.
+
+\code{antal_personroster_totalt} är känt endast när personröstunderlaget är
+verifierat komplett för partiet i alla valområden från kandidatens giltiga
+kandidaturer. Saknas kandidaten i ett sådant komplett underlag blir totalen
+0. Saknat, partiellt eller motsägelsefullt underlag ger \code{NA}, även om vissa
+personröster har rapporterats. Personvalskvalificering bedöms separat.
 }
 \seealso{
 \code{\link[=kandidaturer]{kandidaturer()}}, \code{\link[=valda]{valda()}}, \link{valresultat-package}

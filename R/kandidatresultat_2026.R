@@ -127,25 +127,13 @@
     type = "mandatfordelning"
   )
 
-  persondata <- parse_personroster_2026(rost_raw)
   personval <- parse_personval_2026(mandat_raw)
   valda_data <- parse_valda_ersattare_2026(mandat_raw)
 
   valomradeskod <- as_chr_na(mandat_raw$valomrade$kod)
   valomradesnamn <- as_chr_na(mandat_raw$valomrade$namn)
 
-  personroster <- persondata$personroster_summerade |>
-    dplyr::summarise(
-      antal_personroster = sum(
-        antal_personroster,
-        na.rm = TRUE
-      ),
-      .by = c(
-        kandidatnummer,
-        valtyp,
-        partikod
-      )
-    )
+  personunderlag <- .personrostunderlag_2026(rost_raw, valomradeskod)
 
   list(
     status = tibble::tibble(
@@ -156,7 +144,8 @@
       personval_available =
         isTRUE(attr(personval, "personval_available"))
     ),
-    personroster = personroster,
+    personroster = personunderlag$roster,
+    personroster_status = personunderlag$status,
     personval = personval,
     valda = valda_data$valda
   )
@@ -215,20 +204,11 @@
     purrr::map("status") |>
     purrr::list_rbind()
 
-  personroster <- parsed |>
-    purrr::map("personroster") |>
-    purrr::list_rbind() |>
-    dplyr::summarise(
-      antal_personroster_totalt = sum(
-        antal_personroster,
-        na.rm = TRUE
-      ),
-      .by = c(
-        kandidatnummer,
-        valtyp,
-        partikod
-      )
-    )
+  personroster <- .personrosttotaler_2026(
+    dplyr::filter(kandidaturer, valtyp %in% val),
+    purrr::list_rbind(purrr::map(parsed, "personroster_status")),
+    purrr::list_rbind(purrr::map(parsed, "personroster"))
+  )
 
   personval <- parsed |>
     purrr::map("personval") |>
@@ -390,10 +370,6 @@
       )
     ) |>
     dplyr::mutate(
-      antal_personroster_totalt = dplyr::coalesce(
-        antal_personroster_totalt,
-        0L
-      ),
       kvalificerad_personval = dplyr::case_when(
         kvalificerad_personval_found %in% TRUE ~ TRUE,
         personval_available %in% TRUE ~ FALSE,

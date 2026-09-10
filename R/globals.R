@@ -120,5 +120,7 @@ utils::globalVariables(c(
   "valsedelsstatus",
   "valsedelsuppgift",
   "valtillfalle",
-  "valtyp"
+  "valtyp",
+  ".personrost_rad",
+  "personroster_available"
 ))

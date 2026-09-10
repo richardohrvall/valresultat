@@ -35,7 +35,7 @@ test_that("personal election and elected status distinguish NA from FALSE", {
   known <- add_personroster_to_kandidater_2026(
     candidates, fixture_personroster(), fixture_personval()
   )
-  expect_identical(known$antal_personroster_totalt, c(7L, 0L))
+  expect_identical(known$antal_personroster_totalt, c(NA_integer_, NA_integer_))
   expect_identical(known$kvalificerad_personval, c(TRUE, FALSE))
   expect_identical(known$antal_personvalsomraden, c(1L, 0L))
   expect_identical(add_valda_to_kandidater_2026(candidates, fixture_valda()[0, ])$invald,
@@ -51,7 +51,10 @@ test_that("candidate result pipeline respects availability without network acces
       .parse_kandidatresultat_fil_2026 = function(...) list(
         status = tibble::tibble(valtyp = "RD", valomradeskod = "00",
                                valda_available = available, personval_available = available),
-        personroster = fixture_personroster(),
+        personroster = tibble::tibble(kandidatnummer = "1", valtyp = "RD", partikod = "A",
+                                     valomradeskod = "00", antal_personroster = 7L),
+        personroster_status = tibble::tibble(valtyp = "RD", valomradeskod = "00", partikod = "A",
+                                            personroster_available = available),
         personval = fixture_personval(available),
         valda = if (available) fixture_valda() else fixture_valda()[0, ]
       )
@@ -62,7 +65,7 @@ test_that("candidate result pipeline respects availability without network acces
     expected <- if (available) c(TRUE, FALSE) else c(NA, NA)
     expect_identical(out$invald, expected)
     expect_identical(out$kvalificerad_personval, expected)
-    expect_identical(out$antal_personroster_totalt, c(7L, 0L))
+    expect_identical(out$antal_personroster_totalt, if (available) c(7L, 0L) else c(NA_integer_, NA_integer_))
     expect_equal(nrow(out), 2L)
     expect_false(any(vapply(out, is.list, logical(1))))
   }

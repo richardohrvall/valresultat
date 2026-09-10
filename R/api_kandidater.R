@@ -6,6 +6,12 @@
 #' ställer upp på flera politiska nivåer eller för flera partier kan därför
 #' förekomma på flera rader.
 #'
+#' `antal_personroster_totalt` är känt endast när personröstunderlaget är
+#' verifierat komplett för partiet i alla valområden från kandidatens giltiga
+#' kandidaturer. Saknas kandidaten i ett sådant komplett underlag blir totalen
+#' 0. Saknat, partiellt eller motsägelsefullt underlag ger `NA`, även om vissa
+#' personröster har rapporterats. Personvalskvalificering bedöms separat.
+#'
 #' @param ar Valår. För närvarande stöds 2026.
 #' @param val Valtyp: `"RD"`, `"RF"` eller `"KF"`. `NULL` ger alla.
 #' @param resultat Om `TRUE`, kompletteras kandidaterna med personröster,
