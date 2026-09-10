@@ -5,6 +5,7 @@ export(kandidater)
 export(kandidaturer)
 export(mandat)
 export(valda)
+export(valresultat)
 importFrom(utils,
   download.file,
   unzip

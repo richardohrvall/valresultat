@@ -52,3 +52,10 @@ rsconnect/
 .r-lib/
 .test-tmp/
 .check/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Generated integration-test log
+development/VALRESULTAT_INTEGRATION.txt

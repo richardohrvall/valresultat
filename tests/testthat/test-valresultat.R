@@ -1,0 +1,298 @@
+test_that("all 48 election-level-count combinations select the decided source", {
+  nivaer <- c("valdistrikt", "kommun", "kommunvalkrets", "lan", "region",
+              "regionvalkrets", "riksdagsvalkrets", "riket")
+  expected <- list(RD = c("D", "U", "U", NA, NA, NA, "M", "M"),
+                   RF = c("D", "U", "U", NA, "M", "M", NA, "O"),
+                   KF = c("D", "M", "M", "O", NA, NA, NA, "O"))
+  last <- NULL
+  paths <- unlist(lapply(c("slutlig", "preliminar"), function(r) {
+    unlist(lapply(c("RD", "RF", "KF"), function(v) c(fixture_resultatpath(v, "M", r), fixture_resultatpath(v, "O", r))))
+  }))
+  local_mocked_bindings(
+    .read_resultatindex_2026 = function(...) tibble::tibble(path = paths),
+    .resultat_file_2026 = function(path, ...) path,
+    .read_valresultat_raw = function(file, kalla, val, rakning) {
+      last <<- list(file = file, kalla = kalla)
+      fixture_resultatraw(val, kalla, rakning)
+    }
+  )
+  for (val in names(expected)) for (i in seq_along(nivaer)) for (rakning in c("preliminar", "slutlig")) {
+    last <- NULL
+    if (is.na(expected[[val]][i])) {
+      expect_error(valresultat(val = val, niva = nivaer[i], rakning = rakning), "inte|aktiverat")
+      expect_null(last)
+    } else {
+      out <- valresultat(val = val, niva = nivaer[i], rakning = rakning, progress = FALSE)
+      expect_identical(last$kalla, expected[[val]][i])
+      expect_identical(last$file, fixture_resultatpath(val, expected[[val]][i], rakning))
+      expect_identical(unique(out$geografiniva), nivaer[i])
+      expect_identical(unique(out$rakningstillfalle), rakning)
+      expect_identical(ncol(out), 83L)
+      expect_identical(vapply(out, typeof, ""), vapply(.valresultat_schema(), typeof, ""))
+    }
+  }
+})
+
+test_that("defaults give exactly one natural main level and invalid inputs fail before IO", {
+  local_mocked_bindings(.read_resultatindex_2026 = function(...) stop("INDEX"))
+  for (val in list(NULL, character(), NA_character_, c("RD", "RF"), "EU", 1)) {
+    expect_error(valresultat(val = val), "val|Val")
+  }
+  for (ar in list(2022, 2026.5, NA_real_, numeric(), c(2026, 2026), "2026")) {
+    expect_error(valresultat(ar = ar), "2026")
+  }
+  for (niva in list(character(), NA_character_, c("riket", "kommun"), "fel")) {
+    expect_error(valresultat(niva = niva), "niva|Niv")
+  }
+  for (rakning in list(NULL, NA_character_, "auto", c("slutlig", "preliminar"))) {
+    expect_error(valresultat(rakning = rakning), "rakning")
+  }
+  expect_error(valresultat(source = "local", update = TRUE), 'source = "local".*update = TRUE')
+  expect_error(valresultat(progress = NA), "progress")
+  expect_error(valresultat(archive = 1), "archive")
+  expect_error(valresultat(update = NULL), "update")
+  expect_error(valresultat(val = "RF", niva = "lan"), "OS-formatet.*inte aktiverat.*slutlig")
+  expect_error(valresultat(val = "RD", niva = "lan"), "v1")
+})
+
+test_that("NULL levels are identical to explicit main levels for both counts", {
+  local_mocked_bindings(
+    .read_resultatindex_2026 = function(...) tibble::tibble(path = unlist(lapply(c("slutlig", "preliminar"), function(r) {
+      vapply(c("RD", "RF", "KF"), function(v) fixture_resultatpath(v, "M", r), "")
+    }))),
+    .resultat_file_2026 = function(path, ...) path,
+    .read_valresultat_raw = function(file, kalla, val, rakning) fixture_resultatraw(val, kalla, rakning)
+  )
+  for (v in c("RD", "RF", "KF")) for (r in c("slutlig", "preliminar")) {
+    expect_identical(valresultat(val = tolower(v), rakning = r, progress = FALSE),
+                     valresultat(val = v, niva = c(RD = "riket", RF = "region", KF = "kommun")[[v]], rakning = r, progress = FALSE))
+  }
+  expect_identical(valresultat(progress = FALSE), valresultat(val = "RD", niva = "riket", rakning = "slutlig", progress = FALSE))
+})
+
+test_that("source selection is strict, unique, and never falls back", {
+  path <- fixture_resultatpath("RF")
+  index <- tibble::tibble(path = c(path, fixture_resultatpath("RF", "O"),
+    fixture_resultatpath("RF", "M", "preliminar"), sub("01_RF", "001_RF", path),
+    paste0(path, ".bak"), sub("/Test", "/extra/Test", path)))
+  expect_identical(.valresultat_paths(index, "RF", "slutlig", "M"), path)
+  expect_error(.valresultat_paths(index[2, ], "RF", "slutlig", "M"), "Saknad")
+  expect_error(.valresultat_paths(index[3, ], "RF", "slutlig", "M"), "Saknad")
+  expect_error(.valresultat_paths(tibble::tibble(path = c(path, sub("Test_2026", "Annat", path))), "RF", "slutlig", "M"), "Dubbla")
+  raw <- fixture_resultatraw()
+  raw$valtyp <- "KF"
+  expect_error(fixture_parse_resultat(raw = raw), "metadata")
+  raw <- fixture_resultatraw()
+  raw$valomrade$kod <- "99"
+  expect_error(fixture_parse_resultat(raw = raw), "valomradeskod")
+})
+
+test_that("absent, null, empty and zero other-party nodes are distinct in every source", {
+  for (kalla in c("D", "U", "M", "O")) {
+    val <- if (kalla == "O") "KF" else "RD"
+    niva <- c(D = "valdistrikt", U = "kommun", M = "riket", O = "riket")[[kalla]]
+    for (mode in c("absent", "null", "zero", "unknown", "empty", "wrong")) {
+      raw <- fixture_resultatraw(val, kalla)
+      obj <- switch(kalla, D = raw$valdistrikt[[1]], U = raw$kommuner[[1]], M = raw$valomrade, O = raw$helaLandet)
+      obj$rostfordelning$rosterPaverkaMandat$rosterOvrigaPartier <- NULL
+      if (mode != "absent") obj$rostfordelning$rosterPaverkaMandat["rosterOvrigaPartier"] <- list(switch(mode,
+        null = NULL, zero = list(antalRoster = 0, andelRoster = 0),
+        unknown = list(antalRoster = NULL), empty = list(), wrong = 0))
+      if (kalla == "D") raw$valdistrikt[[1]] <- obj
+      if (kalla == "U") raw$kommuner[[1]] <- obj
+      if (kalla == "M") raw$valomrade <- obj
+      if (kalla == "O") raw$helaLandet <- obj
+      if (mode %in% c("empty", "wrong")) {
+        expect_error(fixture_parse_resultat(val, niva, raw = raw), "rosterOvrigaPartier")
+      } else {
+        out <- fixture_parse_resultat(val, niva, raw = raw)
+        ovriga <- out[out$ovriga_partier, ]
+        expect_equal(nrow(ovriga), as.integer(mode %in% c("zero", "unknown")))
+        if (mode == "zero") expect_identical(ovriga$antal_roster, 0L)
+        if (mode == "unknown") expect_identical(ovriga$antal_roster, NA_integer_)
+        expect_true(all(is.na(ovriga$over_sparr)))
+      }
+    }
+  }
+})
+
+test_that("schema retains structural NA, source units and two reporting populations", {
+  d <- fixture_parse_resultat(niva = "valdistrikt")
+  expect_true(all(is.na(d$antal_valdistrikt_raknade_omrade)))
+  expect_true(all(is.na(d$antal_rostberattigade_raknade)))
+  expect_true(all(is.na(d$kommunnamn)))
+  expect_equal(d$valdel, rep(55, 4))
+  u <- fixture_parse_resultat(niva = "kommun")
+  expect_equal(u$valdel, c(60, 60))
+  expect_identical(u$valomradeskod, c("00", "00"))
+  m <- fixture_parse_resultat("KF", "kommunvalkrets")
+  expect_equal(m$antal_valdistrikt_raknade, rep(2L, 4))
+  expect_equal(m$antal_valdistrikt_raknade_omrade, rep(1L, 4))
+  expect_equal(m$lankod, rep("01", 4))
+  expect_identical(m$valkretskod, m$kommunvalkretskod)
+  expect_true(all(is.na(m$kretskod)))
+  expect_true(all(is.na(fixture_parse_resultat("RF", "region")$lankod)))
+  expect_true(all(is.na(fixture_parse_resultat("KF", "riket")$valomradeskod)))
+  expect_true(all(is.na(m$antal_roster_fg)))
+  expect_identical(m$roster_ej_anmalt_deltagande, rep(0L, 4))
+  raw <- fixture_resultatraw()
+  raw$test <- NULL
+  raw$valomrade$rostfordelning$rosterPaverkaMandat$partiRoster[[1]]$antalRoster <- NULL
+  out <- fixture_parse_resultat(raw = raw)
+  expect_identical(out$test, c(NA, NA))
+  expect_identical(out$antal_roster, c(NA_integer_, 4L))
+  raw$valomrade$rostfordelning$rosterPaverkaMandat$partiRoster[[1]]$antalRoster <- "fel"
+  expect_error(fixture_parse_resultat(raw = raw), "typ")
+})
+
+test_that("empty divisions are typed but existing areas with null results fail", {
+  for (val in c("RD", "RF", "KF")) {
+    niva <- c(RD = "riksdagsvalkrets", RF = "regionvalkrets", KF = "kommunvalkrets")[[val]]
+    raw <- fixture_resultatraw(val)
+    raw$valomrade$valkretsLista <- list()
+    expect_identical(fixture_parse_resultat(val, niva, raw = raw), .valresultat_schema())
+    raw <- fixture_resultatraw(val)
+    raw$valomrade$valkretsLista[[1]]$rostfordelning <- NULL
+    expect_error(fixture_parse_resultat(val, niva, raw = raw), "rostfordelning")
+  }
+  raw <- fixture_resultatraw("RD", "U")
+  raw$kommuner[[1]]$kommunvalkretsar <- NULL
+  expect_identical(fixture_parse_resultat(niva = "kommunvalkrets", raw = raw), .valresultat_schema())
+  raw$kommuner <- NULL
+  expect_error(fixture_parse_resultat(niva = "kommun", raw = raw), "kommuner")
+})
+
+test_that("party and area keys are validated without dropping duplicates", {
+  raw <- fixture_resultatraw()
+  raw$valomrade$rostfordelning$rosterPaverkaMandat$partiRoster[[2]]$partikod <- "0001"
+  expect_error(fixture_parse_resultat(raw = raw), "Duplicerad resultatnyckel")
+  raw <- fixture_resultatraw()
+  raw$valomrade$valkretsLista[[2]]$kod <- "01"
+  expect_error(fixture_parse_resultat(niva = "riksdagsvalkrets", raw = raw), "Duplicerad omr")
+  raw <- fixture_resultatraw("RD", "D")
+  raw$valdistrikt[[1]]$kommunkod <- NULL
+  expect_error(fixture_parse_resultat(niva = "valdistrikt", raw = raw), "identitet")
+})
+
+test_that("threshold flags use only explicit party-node mandate statements", {
+  for (val in c("RD", "RF", "KF")) for (rakning in c("preliminar", "slutlig")) {
+    nivaer <- switch(val, RD = c("riket", "riksdagsvalkrets"),
+                     RF = c("region", "regionvalkrets"), KF = c("kommun", "kommunvalkrets"))
+    for (niva in nivaer) {
+      out <- fixture_parse_resultat(val, niva, rakning)
+      expect_identical(out$over_sparr, rep(c(TRUE, FALSE), nrow(out) / 2))
+    }
+    raw <- fixture_resultatraw(val, "M", rakning)
+    raw$valomrade$valkretsLista[[1]]$rostfordelning$rosterPaverkaMandat$partiRoster[[1]]$deltaMandatfordelning <- NULL
+    raw$valomrade$valkretsLista[[1]]$rostfordelning$rosterPaverkaMandat$partiRoster[[2]]$deltaMandatfordelning <- "okant"
+    expect_true(all(is.na(fixture_parse_resultat(val, nivaer[2], rakning, raw)$over_sparr[1:2])))
+  }
+  for (spec in list(c("RD", "valdistrikt"), c("RD", "kommun"), c("KF", "lan"), c("RF", "riket"))) {
+    expect_true(all(is.na(fixture_parse_resultat(spec[1], spec[2])$over_sparr)))
+  }
+})
+
+test_that("official fixture levels satisfy vote identities without API aggregation", {
+  for (val in c("RD", "RF", "KF")) for (rakning in c("preliminar", "slutlig")) {
+    niveaux <- switch(val, RD = c("valdistrikt", "kommun", "kommunvalkrets", "riksdagsvalkrets", "riket"),
+      RF = c("valdistrikt", "kommun", "kommunvalkrets", "regionvalkrets", "region", "riket"),
+      KF = c("valdistrikt", "kommunvalkrets", "kommun", "lan", "riket"))
+    for (niva in niveaux) {
+      out <- fixture_parse_resultat(val, niva, rakning)
+      expect_equal(out$totalt_antal_roster, out$giltiga_roster + out$ogiltiga_roster)
+      expect_equal(out$ogiltiga_roster, out$blanka_roster + out$roster_ej_anmalt_deltagande + out$ovriga_ogiltiga)
+      expect_equal(sum(out$antal_roster[out$partikod == "0001"]), 6)
+      expect_equal(sum(out$antal_roster[out$partikod == "0002"]), 4)
+      omraden <- out[!duplicated(out[c(.valresultat_geo_key(niva), "geografiniva")]), ]
+      expect_equal(sum(omraden$totalt_antal_roster), 12)
+    }
+  }
+})
+
+test_that("the 83-column contract matches the frozen design, including empty output", {
+  contract <- utils::read.table(test_path("fixtures", "valresultat-schema.txt"),
+                                col.names = c("namn", "typ"), stringsAsFactors = FALSE)
+  for (out in list(.valresultat_schema(), fixture_parse_resultat(),
+                   fixture_parse_resultat("KF", "lan"), fixture_parse_resultat(niva = "valdistrikt"))) {
+    expect_identical(names(out), contract$namn)
+    expect_identical(unname(vapply(out, typeof, "")), contract$typ)
+  }
+})
+
+test_that("local index and ZIP pipeline never uses the network, including archival", {
+  unexpected <- function(...) stop("Unexpected network access")
+  local_mocked_bindings(val_remote_url = unexpected, download_val_file = unexpected)
+  local_mocked_bindings(download.file = unexpected, .package = "utils")
+  root <- tempfile()
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  old <- options(valresultat.resultatsamling_2026 = "test", valresultat.data_dir = root)
+  on.exit(options(old), add = TRUE)
+  path <- fixture_resultatpath()
+  file <- val_local_path(path, 2026, "test", root)
+  dir.create(dirname(file), recursive = TRUE)
+  expect_true(file.copy(test_path("fixtures", "valresultat-rd.zip"), file))
+  indexfile <- val_local_path("index.md5", 2026, "test", root)
+  writeLines(paste(unname(tools::md5sum(file)), paste0("./", path)), indexfile)
+  out <- valresultat(source = "local", progress = FALSE)
+  expect_identical(out$antal_roster, c(6L, 4L))
+  expect_identical(valresultat(source = "local", archive = TRUE, progress = FALSE), out)
+  expect_true(same_file_md5(file, val_archive_path(path, 2026, "test", root)))
+  expect_true(same_file_md5(indexfile, val_archive_path("index.md5", 2026, "test", root)))
+  for (niva in c("valdistrikt", "kommun", "kommunvalkrets", "riksdagsvalkrets")) {
+    actual <- valresultat(niva = niva, source = "local", progress = FALSE)
+    expect_equal(sum(actual$antal_roster), 10L)
+  }
+  expect_identical(valresultat(source = "auto", data_dir = root, progress = FALSE), out)
+  expect_error(valresultat(source = "local", data_dir = tempfile()), "Filen finns inte")
+  expect_error(valresultat(source = "local", update = TRUE), 'source = "local".*update = TRUE')
+  expect_error(valresultat(source = "local", rakning = "preliminar"), "Saknad prim")
+  missing_path <- sub("Test_2026", "Missing", path)
+  writeLines(paste(strrep("a", 32), paste0("./", missing_path)), indexfile)
+  expect_error(valresultat(source = "local", archive = TRUE), "Filen finns inte")
+  expect_false(file.exists(val_archive_path(missing_path, 2026, "test", root)))
+})
+
+test_that("ZIP reader rejects ambiguous, wrong-type and wrong-count entries", {
+  file <- test_path("fixtures", "valresultat-rd.zip")
+  expect_identical(.read_valresultat_raw(file, "M", "RD", "slutlig")$valtyp, "RD")
+  expect_error(.read_valresultat_raw(file, "M", "RF", "slutlig"), "hittade 0")
+  expect_error(.read_valresultat_raw(file, "M", "RD", "preliminar"), "hittade 0")
+  local_mocked_bindings(unzip = function(...) data.frame(Name = c(
+    "A_slutlig_mandatfordelning_00_RD.json", "B_slutlig_mandatfordelning_00_RD.json"
+  )), .package = "utils")
+  expect_error(.read_valresultat_raw(file, "M", "RD", "slutlig"), "hittade 2")
+})
+
+test_that("all public source flags are forwarded without changing their semantics", {
+  calls <- list()
+  local_mocked_bindings(
+    .read_resultatindex_2026 = function(source, data_dir, update, archive) {
+      calls[[1]] <<- list(source, data_dir, update, archive)
+      tibble::tibble(path = fixture_resultatpath())
+    },
+    .resultat_file_2026 = function(path, source, data_dir, update, archive) {
+      calls[[2]] <<- list(source, data_dir, update, archive)
+      path
+    },
+    .read_valresultat_raw = function(...) fixture_resultatraw()
+  )
+  for (source in c("local", "auto", "remote")) for (update in c(FALSE, TRUE)) for (archive in c(FALSE, TRUE)) {
+    calls <- list()
+    if (source == "local" && update) {
+      expect_error(valresultat(source = source, update = update, archive = archive), "update = TRUE")
+      expect_length(calls, 0)
+    } else {
+      valresultat(source = source, data_dir = "fixture", update = update, archive = archive, progress = FALSE)
+      expect_identical(calls, rep(list(list(source, "fixture", update, archive)), 2))
+    }
+  }
+})
+
+test_that("OS totals use the existing within-node identity and preserve missing operands", {
+  raw <- fixture_resultatraw("KF", "O")
+  raw$helaLandet$totaltAntalRoster <- NULL
+  out <- fixture_parse_resultat("KF", "riket", raw = raw)
+  expect_identical(out$totalt_antal_roster, c(12L, 12L))
+  raw$helaLandet$rostfordelning$rosterEjPaverkaMandat$antalRoster <- NULL
+  expect_true(all(is.na(fixture_parse_resultat("KF", "riket", raw = raw)$totalt_antal_roster)))
+})

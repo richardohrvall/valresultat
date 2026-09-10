@@ -2,7 +2,6 @@
 % Please edit documentation in R/valresultat-package.R
 \docType{package}
 \name{valresultat-package}
-\alias{valresultat}
 \alias{valresultat-package}
 \title{Svenska valdata från Valmyndigheten}
 \description{
