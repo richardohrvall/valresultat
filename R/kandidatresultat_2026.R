@@ -1,7 +1,7 @@
 .resultatsamling_2026 <- function() {
   getOption(
     "valresultat.resultatsamling_2026",
-    "genrep2026"
+    "val2026"
   )
 }
 
@@ -31,8 +31,7 @@
 
 
 .resultat_paths_2026 <- function(index, val) {
-
-  purrr::map_dfr(
+  out <- purrr::map_dfr(
     val,
     \(valtyp) {
 
@@ -51,6 +50,16 @@
         )
     }
   )
+  saknas <- setdiff(val, unique(out$valtyp))
+  if (length(saknas)) {
+    stop("Hittade ingen slutlig resultatfil f\u00f6r: ",
+         paste(saknas, collapse = ", "), ".", call. = FALSE)
+  }
+  filkod <- sub(".*_([^_]+)_[A-Z]{2}\\.zip$", "\\1", out$path)
+  if (anyDuplicated(paste(out$valtyp, filkod))) {
+    stop("Dubbla resultatfiler f\u00f6r samma filidentitet.", call. = FALSE)
+  }
+  out
 }
 
 
@@ -72,29 +81,53 @@
 }
 
 
-.valda_available_2026 <- function(raw) {
-
-  valomrade <- raw$valomrade
-
-  valomrade_available <-
-    "valda" %in% names(valomrade) &&
-    !is.null(valomrade$valda)
-
-  valkretsar <- valomrade$valkretsLista
-
-  valkrets_available <- FALSE
-
-  if (!is.null(valkretsar) && length(valkretsar) > 0) {
-    valkrets_available <- purrr::some(
-      valkretsar,
-      \(vk) {
-        "valda" %in% names(vk) &&
-          !is.null(vk$valda)
-      }
-    )
+.valda_nodstatus_2026 <- function(raw, obj) {
+  if (!"valda" %in% names(obj) || is.null(obj$valda)) return(FALSE)
+  if (!identical(as_chr_na(raw$rakningstillfalle), "slutlig") ||
+      !.personrost_heltal(obj$antalValdistriktRaknade) ||
+      !.personrost_heltal(obj$antalValdistriktSomSkaRaknas) ||
+      obj$antalValdistriktRaknade != obj$antalValdistriktSomSkaRaknas ||
+      !.personrost_objekt(obj$valda) ||
+      !.personrost_array(obj$valda$partiLedamoterLista) ||
+      !.personrost_objekt(obj$mandatfordelning) ||
+      !.personrost_array(obj$mandatfordelning$partiLista)) return(NA)
+  mandat <- obj$mandatfordelning$partiLista
+  valda <- obj$valda$partiLedamoterLista
+  if (!all(vapply(mandat, function(p) .personrost_objekt(p) &&
+      .personrost_id(p$partikod) && .personrost_heltal(p$antalMandat), logical(1))) ||
+      !all(vapply(valda, function(p) .personrost_objekt(p) &&
+      .personrost_id(p$partikod) && .personrost_array(p$ledamoter) &&
+      .personrost_heltal(p$antalTommaStolar), logical(1)))) return(NA)
+  mkod <- vapply(mandat, function(p) p$partikod, "")
+  vkod <- vapply(valda, function(p) p$partikod, "")
+  if (anyDuplicated(mkod) || anyDuplicated(vkod)) return(NA)
+  for (p in valda) {
+    ids <- vapply(p$ledamoter, function(x) as_chr_na(x$kandidatnummer), "")
+    if (any(!nzchar(ids)) || anyDuplicated(ids)) return(NA)
+    m <- mandat[[match(p$partikod, mkod)]]
+    if (is.null(m) || length(p$ledamoter) + p$antalTommaStolar != m$antalMandat) return(NA)
   }
+  positiva <- mkod[vapply(mandat, function(p) p$antalMandat > 0, logical(1))]
+  if (!setequal(vkod, positiva)) return(NA)
+  TRUE
+}
 
-  valomrade_available || valkrets_available
+.valda_kallval_2026 <- function(raw) {
+  omrade <- raw$valomrade
+  valkretsar <- omrade$valkretsLista
+  if (.personrost_array(valkretsar) && length(valkretsar)) {
+    states <- vapply(valkretsar, function(vk) .valda_nodstatus_2026(raw, vk), logical(1))
+    if (all(states %in% FALSE)) {
+      area <- .valda_nodstatus_2026(raw, omrade)
+      return(list(niva = "valomrade", available = area))
+    }
+    return(list(niva = "valkrets", available = .personrost_status(states)))
+  }
+  list(niva = "valomrade", available = .valda_nodstatus_2026(raw, omrade))
+}
+
+.valda_available_2026 <- function(raw) {
+  .valda_kallval_2026(raw)$available
 }
 
 
@@ -141,8 +174,7 @@
       valomradeskod = valomradeskod,
       valomradesnamn = valomradesnamn,
       valda_available = .valda_available_2026(mandat_raw),
-      personval_available =
-        isTRUE(attr(personval, "personval_available"))
+      personval_available = attr(personval, "personval_available", exact = TRUE)
     ),
     personroster = personunderlag$roster,
     personroster_status = personunderlag$status,
@@ -236,19 +268,9 @@
         valomradeskod
       )
     ) |>
-    dplyr::mutate(
-      valda_available = dplyr::coalesce(
-        valda_available,
-        FALSE
-      ),
-      personval_available = dplyr::coalesce(
-        personval_available,
-        FALSE
-      )
-    ) |>
     dplyr::summarise(
-      valda_available = all(valda_available),
-      personval_available = all(personval_available),
+      valda_available = .personrost_status(valda_available),
+      personval_available = .personrost_status(personval_available),
       .by = c(
         kandidatnummer,
         valtyp,

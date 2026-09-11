@@ -1,23 +1,55 @@
+.mandat_nivamatris_2026 <- function() {
+  tibble::tribble(
+    ~valtyp, ~geografiniva,
+    "RD", "riket", "RD", "riksdagsvalkrets",
+    "RF", "region", "RF", "regionvalkrets",
+    "KF", "kommun", "KF", "kommunvalkrets"
+  )
+}
+
+.mandat_par_2026 <- function(val, niva) {
+  val <- if (is.null(val)) c("RD", "RF", "KF") else val
+  matris <- dplyr::filter(.mandat_nivamatris_2026(), valtyp %in% val)
+  if (is.null(niva)) return(matris)
+  .check_text(niva, "niva", flera = TRUE)
+  ok <- unique(.mandat_nivamatris_2026()$geografiniva)
+  okanda <- setdiff(niva, ok)
+  if (length(okanda)) stop("Ok\u00e4nd geografisk niv\u00e5: ", paste(okanda, collapse = ", "), ".", call. = FALSE)
+  saknas <- setdiff(unique(niva), matris$geografiniva)
+  if (length(saknas)) {
+    stop("Niv\u00e5n ", paste(saknas, collapse = ", "),
+         " st\u00f6ds inte f\u00f6r vald valtyp.", call. = FALSE)
+  }
+  dplyr::filter(matris, geografiniva %in% niva)
+}
+
+.mandat_public_schema_2026 <- function() {
+  dplyr::mutate(.mandat_schema_2026(), antal_tomma_stolar = integer())
+}
+
 #' Mandat
 #'
 #' Hämtar mandatfördelningen.
 #'
 #' @param ar Valår. För närvarande stöds 2026.
-#' @param val Valtyp: `"RD"`, `"RF"` eller `"KF"`. `NULL` ger alla.
-#' @param rakning `"slutlig"` eller `"preliminar"`.
-#' @param niva Geografisk nivå: `"riket"`, `"riksdagsvalkrets"`, `"region"`,
-#'   `"regionvalkrets"`, `"kommun"` eller `"kommunvalkrets"`.
-#'   `NULL` ger alla relevanta nivåer. Resultatet filtreras till valda nivåer.
+#' @param val En eller flera valtyper: `"RD"`, `"RF"` eller `"KF"`.
+#'   `NULL` ger alla.
+#' @param rakning Exakt en räkning: `"slutlig"` eller `"preliminar"`.
+#' @param niva En eller flera geografiska nivåer. RD stöder `"riket"` och
+#'   `"riksdagsvalkrets"`, RF `"region"` och `"regionvalkrets"`, och KF
+#'   `"kommun"` och `"kommunvalkrets"`. `NULL` ger alla relevanta nivåer.
 #' @param source Datakälla: `"auto"`, `"local"` eller `"remote"`.
-#'   `"local"` använder aldrig nätet och får inte kombineras med `update = TRUE`.
-#'   Lokal arkivering kräver en redan befintlig lokal fil.
 #' @param data_dir Lokal rotmapp för rådata.
 #' @param update Om `TRUE`, uppdateras lokala arbetskopior.
 #' @param archive Om `TRUE`, sparas även daterade snapshots.
 #' @param progress Visa progressindikator.
-#'
-#' @return En tibble med mandat per parti och geografiskt område, inklusive
-#'   `geografiniva`, `rakningstillfalle` och `antal_tomma_stolar`.
+#' @return En tibble där en rad avser val, räkning, geografisk nivå och
+#'   område samt parti. Områdestotaler upprepas på partirader och nivåerna
+#'   ska inte summeras tillsammans. Saknade totalsummor är `NA` när någon
+#'   mandatkomponent är okänd. `antal_tomma_stolar` är `NA` utan verifierat
+#'   underlag och explicit noll bevaras.
+#' @examples
+#' \dontrun{mandat(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 #' @seealso [valda()], [ersattare()], [valresultat-package]
 #' @export
 mandat <- function(
@@ -32,43 +64,17 @@ mandat <- function(
     progress = interactive()
 ) {
 
-  source <- match.arg(source)
-  .check_source_update(source, update)
-  rakning <- match.arg(rakning)
-  val <- .valtyper(val)
-
-  if (!identical(as.integer(ar), 2026L)) {
-    stop(
-      "`mandat()` st\u00f6der f\u00f6r n\u00e4rvarande endast val\u00e5ret 2026.",
-      call. = FALSE
-    )
-  }
-
-  if (is.null(val)) {
-    val <- c("RD", "RF", "KF")
-  }
-
-  allowed_niva <- c(
-    "riket",
-    "riksdagsvalkrets",
-    "region",
-    "regionvalkrets",
-    "kommun",
-    "kommunvalkrets"
+  source <- .check_public_args(
+    ar, "mandat", source, data_dir, update, archive, progress
   )
-
-  if (!is.null(niva)) {
-    invalid_niva <- setdiff(niva, allowed_niva)
-
-    if (length(invalid_niva) > 0) {
-      stop(
-        "Ok\u00e4nd geografisk niv\u00e5: ",
-        paste(invalid_niva, collapse = ", "),
-        ".",
-        call. = FALSE
-      )
-    }
+  if (missing(rakning)) rakning <- "slutlig"
+  .check_text(rakning, "rakning")
+  if (!rakning %in% c("slutlig", "preliminar")) {
+    stop("Ok\u00e4nd rakning; ange slutlig eller preliminar.", call. = FALSE)
   }
+  val <- .valtyper(val)
+  par <- .mandat_par_2026(val, niva)
+  val <- unique(par$valtyp)
 
   index <- .read_resultatindex_2026(
     source = source,
@@ -103,11 +109,16 @@ mandat <- function(
     }
   )
 
-  if (nrow(paths) == 0) {
+  saknade_val <- setdiff(val, unique(paths$valtyp))
+  if (length(saknade_val)) {
     stop(
-      "Hittade inga mandatfiler f\u00f6r vald kombination av val och r\u00e4kning.",
+      "Hittade ingen mandatfil f\u00f6r: ", paste(saknade_val, collapse = ", "), ".",
       call. = FALSE
     )
+  }
+  filkod <- sub(".*_([^_]+)_[A-Z]{2}\\.zip$", "\\1", paths$path)
+  if (anyDuplicated(paste(paths$valtyp, filkod))) {
+    stop("Dubbla mandatfiler f\u00f6r samma filidentitet.", call. = FALSE)
   }
 
   parsed <- purrr::map(
@@ -123,6 +134,11 @@ mandat <- function(
         file,
         type = "mandatfordelning"
       )
+
+      if (!identical(as_chr_na(raw$valtyp), paths$valtyp[[match(path, paths$path)]]) ||
+          !identical(as_chr_na(raw$rakningstillfalle), rakning)) {
+        stop("Mandatfilens valtyp eller r\u00e4kning st\u00e4mmer inte med fils\u00f6kv\u00e4gen.", call. = FALSE)
+      }
 
       mandat_data <- parse_mandat_2026(raw)
 
@@ -151,12 +167,15 @@ mandat <- function(
     },
     .progress = progress
   ) |>
-    purrr::list_rbind()
+    purrr::list_rbind() |>
+    dplyr::inner_join(par, by = dplyr::join_by(valtyp, geografiniva))
 
-  if (!is.null(niva)) {
-    parsed <- parsed |>
-      dplyr::filter(geografiniva %in% niva)
+  parsed <- dplyr::bind_rows(.mandat_public_schema_2026(), parsed)
+  nyckel <- c("valtillfalle", "valtyp", "rakningstillfalle", "geografiniva",
+              "valomradeskod", "valkretskod", "partikod")
+  obligatoriska <- setdiff(nyckel, "valkretskod")
+  if (nrow(parsed) && (anyNA(parsed[obligatoriska]) || anyDuplicated(parsed[nyckel]))) {
+    stop("Mandatresultatet har saknad eller dubblerad nyckel.", call. = FALSE)
   }
-
   parsed
 }

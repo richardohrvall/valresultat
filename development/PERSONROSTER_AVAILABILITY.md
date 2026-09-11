@@ -103,8 +103,7 @@ Regeln är avsiktligt strikt och kan ge NA för användbara filer om källan
 utelämnar nollpartier/nolllistor. Den behöver verifieras med små godkända
 källrepresentativa exempel, särskilt för uppsamlingsdistrikt, tomma arrayer
 och hur distriktsräknarna relaterar till arrayen. Implementations- och
-integrationsresultat finns i `PERSONROSTER_IMPLEMENTATION.md` och
-`PERSONROSTER_INTEGRATION.txt`. Befintliga filer har där lästs read-only
+integrationsresultat finns i `PERSONROSTER_IMPLEMENTATION.md`. Befintliga filer har där lästs read-only
 efter uttryckligt tillstånd.
 
 De deterministiska testerna täcker saknat/null/[] separat, nollröster, saknad kandidat

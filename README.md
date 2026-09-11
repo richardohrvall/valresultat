@@ -130,6 +130,13 @@ Candidate-result information is included when the corresponding final result dat
 
 `valresultat` reads public election data from Valmyndigheten. Source files can be accessed remotely or stored locally for reproducible analysis.
 
+Normal calls use the live 2026 result collection, `val2026`. Rehearsal data
+remain available for explicit testing or development with:
+
+```r
+options(valresultat.resultatsamling_2026 = "genrep2026")
+```
+
 The main source modes are:
 
 - `source = "auto"` – use a local source file if it exists, otherwise use the remote source.
@@ -151,12 +158,14 @@ Depending on election type and source availability, election results can be requ
 - `valdistrikt`
 - `kommun`
 - `kommunvalkrets`
+- `lan` (KF only)
 - `region`
 - `regionvalkrets`
 - `riksdagsvalkrets`
 - `riket`
 
-Some additional geographic summaries documented by Valmyndigheten are not yet exposed in the current version.
+RD/`lan` is not supported. RF/`lan` is documented in the source format but is
+not activated until a final source has been verified; use `region` for RF.
 
 ## Current scope
 
@@ -176,7 +185,12 @@ Support for earlier elections is planned for a later stage.
 
 ## Status
 
-The package should currently be regarded as experimental. The code has automated tests and the implemented 2026 result paths have been checked against available Valmyndigheten rehearsal files. Live election data may reveal additional source-format edge cases.
+The package should currently be regarded as experimental. Final individual
+vote-distribution (D), subordinate summary (U) and mandate (M) paths have been
+checked against selected Valmyndigheten 2026 rehearsal files. Preliminary
+paths and superior summaries (O) are implemented and covered by deterministic
+fixtures, but have not yet been verified against corresponding real local
+files. Live election data may reveal additional source-format edge cases.
 
 Bug reports and suggestions are welcome through the GitHub repository.
 

@@ -26,9 +26,7 @@ valresultat(
 \item{niva}{En geografisk nivå. \code{NULL} ger valets huvudnivå: RD \code{"riket"},
 RF \code{"region"}, KF \code{"kommun"}. Se nivåerna nedan.}
 
-\item{source}{Datakälla: \code{"auto"}, \code{"local"} eller \code{"remote"}.
-\code{"local"} använder aldrig nätet och får inte kombineras med \code{update = TRUE}.
-Lokal arkivering kräver en redan befintlig lokal fil.}
+\item{source}{Datakälla: \code{"auto"}, \code{"local"} eller \code{"remote"}.}
 
 \item{data_dir}{Lokal rotmapp för rådata.}
 
@@ -77,7 +75,8 @@ Verifierat tom valkretsindelning ger en typad tom tabell, medan saknad
 röstfördelning för ett existerande område ger fel.
 
 \code{data_dir} går före optionen \code{valresultat.data_dir}. Resultatsamlingen
-väljs med optionen \code{valresultat.resultatsamling_2026} (default genrep2026).
+väljs med optionen \code{valresultat.resultatsamling_2026} (default \code{"val2026"}).
+Test-/utvecklingssamlingen \code{"genrep2026"} kan väljas uttryckligen.
 \code{source = "local"} använder aldrig nätet. Lokal arkivering kopierar endast
 befintliga filer; en snapshot från samma datum får ersättas.
 }

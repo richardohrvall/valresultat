@@ -1,9 +1,11 @@
 #' Svenska valdata från Valmyndigheten
 #'
-#' Läs kandidaturer, kandidater, mandat och ersättarrelationer för valet 2026.
+#' Läs harmoniserade valresultat, kandidaturer, kandidater, mandat och
+#' ersättarrelationer för valet 2026 med bland annat [valresultat()].
 #' Resultatfiler väljs via `index.md5`. Optionen
 #' `valresultat.resultatsamling_2026` väljer resultatsamling och har för närvarande
-#' standardvärdet `"genrep2026"`.
+#' standardvärdet `"val2026"`. Test-/utvecklingssamlingen `"genrep2026"` kan
+#' väljas uttryckligen.
 #'
 #' En lokal rådatamapp anges med `data_dir` eller optionen
 #' `valresultat.data_dir`. Explicit `data_dir` har företräde.

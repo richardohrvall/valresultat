@@ -4,7 +4,8 @@
 #' den slutliga mandatfördelningen.
 #'
 #' @param ar Valår. För närvarande stöds 2026.
-#' @param val Valtyp: `"RD"`, `"RF"` eller `"KF"`. `NULL` ger alla.
+#' @param val En eller flera valtyper: `"RD"`, `"RF"` eller `"KF"`.
+#'   `NULL` ger alla.
 #' @param source Datakälla: `"auto"`, `"local"` eller `"remote"`.
 #'   `"local"` använder aldrig nätet och får inte kombineras med `update = TRUE`.
 #'   Lokal arkivering kräver en redan befintlig lokal fil.
@@ -13,8 +14,13 @@
 #' @param archive Om `TRUE`, sparas även daterade snapshots.
 #' @param progress Visa progressindikator.
 #'
-#' @return En tibble med relationer mellan valda ledamöter och ersättare,
-#'   inklusive ersättarordning, ersättargrupp och valgrund.
+#' @return En tibble där en rad är relationen mellan en vald ledamot och en
+#'   ersättare inom val, område/valkrets, parti och ersättargrupp.
+#'   `ledamot_kandidatnummer`, `ersattare_kandidatnummer` och
+#'   `ersattarordning` identifierar relationen. Ordning är integer; koder och
+#'   namn är character. Ett känt tomt resultat behåller samma typade schema.
+#' @examples
+#' \dontrun{ersattare(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 #' @seealso [valda()], [mandat()], [valresultat-package]
 #' @export
 ersattare <- function(
@@ -27,16 +33,10 @@ ersattare <- function(
     progress = interactive()
 ) {
 
-  source <- match.arg(source)
-  .check_source_update(source, update)
+  source <- .check_public_args(
+    ar, "ersattare", source, data_dir, update, archive, progress
+  )
   val <- .valtyper(val)
-
-  if (!identical(as.integer(ar), 2026L)) {
-    stop(
-      "`ersattare()` st\u00f6der f\u00f6r n\u00e4rvarande endast val\u00e5ret 2026.",
-      call. = FALSE
-    )
-  }
 
   if (is.null(val)) {
     val <- c("RD", "RF", "KF")

@@ -1,12 +1,12 @@
 Package: valresultat
 Title: Read and Harmonise Swedish Election Results
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: person("Richard", "Öhrvall", email = "richard.ohrvall@gmail.com",
     role = c("aut", "cre"))
 Description: Downloads, archives and parses Swedish election data published by
-    Valmyndigheten. Provides analysis-friendly tables of candidacies, candidates,
-    mandates and substitute relationships, alongside parsers for vote results
-    and personal votes. Supports local raw-data archives and remote sources.
+    Valmyndigheten. Provides harmonised, analysis-friendly tables of election
+    results, candidacies, candidates, mandates, personal votes and substitute
+    relationships. Supports local raw-data archives and remote sources.
     Active development currently focuses on the 2026 parliamentary, regional
     and municipal elections.
 License: MIT + file LICENSE
@@ -29,3 +29,5 @@ Suggests:
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.1.0
+URL: https://github.com/richardohrvall/valresultat
+BugReports: https://github.com/richardohrvall/valresultat/issues

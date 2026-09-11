@@ -41,7 +41,8 @@
 #' röstfördelning för ett existerande område ger fel.
 #'
 #' `data_dir` går före optionen `valresultat.data_dir`. Resultatsamlingen
-#' väljs med optionen `valresultat.resultatsamling_2026` (default genrep2026).
+#' väljs med optionen `valresultat.resultatsamling_2026` (default `"val2026"`).
+#' Test-/utvecklingssamlingen `"genrep2026"` kan väljas uttryckligen.
 #' `source = "local"` använder aldrig nätet. Lokal arkivering kopierar endast
 #' befintliga filer; en snapshot från samma datum får ersättas.
 #' @return En tibble med 83 kolumner, en geografisk nivå och unika
@@ -58,29 +59,21 @@ valresultat <- function(
     niva = NULL, source = c("auto", "local", "remote"), data_dir = NULL,
     update = FALSE, archive = FALSE, progress = interactive()
 ) {
-  if (!is.numeric(ar) || length(ar) != 1L || is.na(ar) || ar != 2026) {
-    stop("`valresultat()` st\u00f6der endast val\u00e5ret 2026.", call. = FALSE)
-  }
-  .valresultat_scalar(val, "val")
+  .check_ar_2026(ar, "valresultat")
+  .check_text(val, "val")
   val <- toupper(val)
   if (!val %in% c("RD", "RF", "KF")) stop("Ok\u00e4nd valtyp.", call. = FALSE)
   if (missing(rakning)) rakning <- "slutlig"
-  .valresultat_scalar(rakning, "rakning")
+  .check_text(rakning, "rakning")
   if (!rakning %in% c("slutlig", "preliminar")) {
     stop("Ok\u00e4nd rakning; ange slutlig eller preliminar.", call. = FALSE)
   }
   if (is.null(niva)) niva <- c(RD = "riket", RF = "region", KF = "kommun")[[val]]
-  .valresultat_scalar(niva, "niva")
+  .check_text(niva, "niva")
   kalla <- .valresultat_kalla(val, niva)
-  source <- match.arg(source)
-  for (namn in c("update", "archive", "progress")) {
-    x <- get(namn)
-    if (!is.logical(x) || length(x) != 1L || is.na(x)) {
-      stop("`", namn, "` ska vara TRUE eller FALSE.", call. = FALSE)
-    }
-  }
-  if (!is.null(data_dir)) .valresultat_scalar(data_dir, "data_dir")
-  .check_source_update(source, update)
+  source <- .check_public_args(
+    ar, "valresultat", source, data_dir, update, archive, progress
+  )
   index <- .read_resultatindex_2026(source, data_dir, update, archive)
   paths <- .valresultat_paths(index, val, rakning, kalla)
   resultat <- purrr::map(paths, function(path) {
@@ -159,7 +152,7 @@ valresultat <- function(
   # Rotstrukturen verifieras dessutom före parsning, särskilt för OS.
   if (kalla == "O") typ <- "(?:overordnad_)?summering"
   pattern <- paste0("(^|/)[^/]+_", rakning, "_", typ,
-                    if (kalla == "U") "_" else "(?:_[^/]+)?_", val, "\\.json$")
+                    "(?:_[^/]+)?_", val, "\\.json$")
   poster <- filer[grepl(pattern, filer, perl = TRUE)]
   if (length(poster) != 1L) {
     stop("F\u00f6rv\u00e4ntade exakt en JSON-fil f\u00f6r ", kalla, "/", val, "/", rakning,

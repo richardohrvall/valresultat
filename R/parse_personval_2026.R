@@ -43,6 +43,31 @@ parse_personval_2026 <- function(raw) {
     )
   }
 
+  rakning_komplett <- function(obj) {
+    a <- obj$antalValdistriktRaknade
+    b <- obj$antalValdistriktSomSkaRaknas
+    identical(as_chr_na(raw$rakningstillfalle), "slutlig") &&
+      .personrost_heltal(a) && .personrost_heltal(b) && a == b
+  }
+
+  liststatus <- function(obj) {
+    if (!"kvalificeradeForPersonvalLista" %in% names(obj) ||
+        is.null(obj$kvalificeradeForPersonvalLista)) return(FALSE)
+    x <- obj$kvalificeradeForPersonvalLista
+    if (!.personrost_array(x) || !rakning_komplett(obj)) return(NA)
+    giltig <- vapply(x, function(r) {
+      .personrost_objekt(r) && .personrost_id(r$partikod) &&
+        (.personrost_id(r$kandidatnummer) || .personrost_heltal(r$kandidatnummer)) &&
+        .personrost_heltal(r$antalPersonroster) &&
+        is.numeric(r$andelPersonroster) && length(r$andelPersonroster) == 1L &&
+        !is.na(r$andelPersonroster) && is.finite(r$andelPersonroster)
+    }, logical(1))
+    if (!all(giltig)) return(NA)
+    id <- vapply(x, function(r) paste(as_chr_na(r$partikod),
+                                      as_chr_na(r$kandidatnummer)), "")
+    if (anyDuplicated(id)) NA else TRUE
+  }
+
   parse_lista <- function(
       lista,
       geografiniva,
@@ -50,7 +75,10 @@ parse_personval_2026 <- function(raw) {
       valkretsnamn = NA_character_
   ) {
 
-    if (is.null(lista) || length(lista) == 0) {
+    if (!.personrost_array(lista) || length(lista) == 0 ||
+        !isTRUE(liststatus(list(kvalificeradeForPersonvalLista = lista,
+                               antalValdistriktRaknade = 0L,
+                               antalValdistriktSomSkaRaknas = 0L)))) {
       return(empty_personval())
     }
 
@@ -87,13 +115,8 @@ parse_personval_2026 <- function(raw) {
 
   if (!is.null(valkretsar) && length(valkretsar) > 0) {
 
-    available <- purrr::some(
-      valkretsar,
-      \(vk) {
-        "kvalificeradeForPersonvalLista" %in% names(vk) &&
-          !is.null(vk$kvalificeradeForPersonvalLista)
-      }
-    )
+    states <- vapply(valkretsar, liststatus, logical(1))
+    available <- .personrost_status(states)
 
     out <- valkretsar |>
       purrr::map(
@@ -110,9 +133,7 @@ parse_personval_2026 <- function(raw) {
     return(out)
   }
 
-  available <-
-    "kvalificeradeForPersonvalLista" %in% names(valomrade) &&
-    !is.null(valomrade$kvalificeradeForPersonvalLista)
+  available <- liststatus(valomrade)
 
   out <- parse_lista(
     lista = valomrade$kvalificeradeForPersonvalLista,

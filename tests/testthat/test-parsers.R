@@ -1,6 +1,10 @@
 test_that("personval parser distinguishes absent and available empty lists", {
   absent <- list(valtyp = "RD", valomrade = list(kod = "00"))
-  present <- absent
+  present <- list(
+    valtyp = "RD", rakningstillfalle = "slutlig",
+    valomrade = list(kod = "00", antalValdistriktRaknade = 1L,
+                     antalValdistriktSomSkaRaknas = 1L)
+  )
   present$valomrade$kvalificeradeForPersonvalLista <- list()
   unknown <- parse_personval_2026(absent)
   known <- parse_personval_2026(present)
@@ -12,7 +16,8 @@ test_that("personval parser distinguishes absent and available empty lists", {
   expect_type(unknown$antal_personroster, "integer")
   expect_type(unknown$andel_personroster, "double")
   expect_false(.valda_available_2026(absent))
-  present$valomrade$valda <- list()
+  present$valomrade$mandatfordelning <- list(partiLista = list())
+  present$valomrade$valda <- list(partiLedamoterLista = list())
   expect_true(.valda_available_2026(present))
 })
 

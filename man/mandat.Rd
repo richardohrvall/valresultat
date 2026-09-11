@@ -19,17 +19,16 @@ mandat(
 \arguments{
 \item{ar}{Valår. För närvarande stöds 2026.}
 
-\item{val}{Valtyp: \code{"RD"}, \code{"RF"} eller \code{"KF"}. \code{NULL} ger alla.}
+\item{val}{En eller flera valtyper: \code{"RD"}, \code{"RF"} eller \code{"KF"}.
+\code{NULL} ger alla.}
 
-\item{rakning}{\code{"slutlig"} eller \code{"preliminar"}.}
+\item{rakning}{Exakt en räkning: \code{"slutlig"} eller \code{"preliminar"}.}
 
-\item{niva}{Geografisk nivå: \code{"riket"}, \code{"riksdagsvalkrets"}, \code{"region"},
-\code{"regionvalkrets"}, \code{"kommun"} eller \code{"kommunvalkrets"}.
-\code{NULL} ger alla relevanta nivåer. Resultatet filtreras till valda nivåer.}
+\item{niva}{En eller flera geografiska nivåer. RD stöder \code{"riket"} och
+\code{"riksdagsvalkrets"}, RF \code{"region"} och \code{"regionvalkrets"}, och KF
+\code{"kommun"} och \code{"kommunvalkrets"}. \code{NULL} ger alla relevanta nivåer.}
 
-\item{source}{Datakälla: \code{"auto"}, \code{"local"} eller \code{"remote"}.
-\code{"local"} använder aldrig nätet och får inte kombineras med \code{update = TRUE}.
-Lokal arkivering kräver en redan befintlig lokal fil.}
+\item{source}{Datakälla: \code{"auto"}, \code{"local"} eller \code{"remote"}.}
 
 \item{data_dir}{Lokal rotmapp för rådata.}
 
@@ -40,11 +39,17 @@ Lokal arkivering kräver en redan befintlig lokal fil.}
 \item{progress}{Visa progressindikator.}
 }
 \value{
-En tibble med mandat per parti och geografiskt område, inklusive
-\code{geografiniva}, \code{rakningstillfalle} och \code{antal_tomma_stolar}.
+En tibble där en rad avser val, räkning, geografisk nivå och
+område samt parti. Områdestotaler upprepas på partirader och nivåerna
+ska inte summeras tillsammans. Saknade totalsummor är \code{NA} när någon
+mandatkomponent är okänd. \code{antal_tomma_stolar} är \code{NA} utan verifierat
+underlag och explicit noll bevaras.
 }
 \description{
 Hämtar mandatfördelningen.
+}
+\examples{
+\dontrun{mandat(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 }
 \seealso{
 \code{\link[=valda]{valda()}}, \code{\link[=ersattare]{ersattare()}}, \link{valresultat-package}

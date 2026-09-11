@@ -1,5 +1,8 @@
 # Aktuell utvecklingsstatus, 2026-09-09
 
+> Historisk statusbild. Aktuell releasebedömning och beslutade åtgärder finns
+> i `RELEASE_0.1.0_REVIEW.md` och `RELEASE_0.1.0_PATCH_PLAN.md`.
+
 ## Genomfört i denna etapp
 
 - Strikt lokal datakälla: `source = "local", update = TRUE` ger fel före

@@ -20,9 +20,10 @@ Kandidatmodellens observationsnivå och publika funktionsargument är oförändr
 - Kandidatnummer som råkällan anger som heltal stöds och normaliseras till
   teckenidentiteter, med regressionstest.
 
-Personvalskvalificering och invald-logik har inte ändrats. De tre befintliga
-detaljerade personrösttabellerna och deras parser är oförändrade. `valresultat()`,
-`mandat()` och QMD-filen har inte ändrats.
+Personvalskvalificering och invald-status har därefter fått motsvarande
+trelägesregel inför 0.1.0: `FALSE` kräver komplett underlag och saknat,
+partiellt eller oklart underlag ger `NA`. De tre detaljerade
+personrösttabellerna är oförändrade.
 
 ## Filer i ändringen
 
@@ -35,7 +36,8 @@ Nya filer:
   flera valområden, noll kontra NA samt saknade RF/KF-resultat.
 - `development/integration-personroster.R`: reproducerbar lokal kontroll med
   spärrad nätåtkomst/arkivering och kontrollsummor för råfilerna.
-- `development/PERSONROSTER_INTEGRATION.txt`: integrationskörningens utfall.
+- Tekniska integrationsloggar är genererade och versionshanteras inte;
+  den bestående redovisningen finns i detta dokument.
 - `development/PERSONROSTER_IMPLEMENTATION.md`: denna redovisning.
 
 Ändrade filer:

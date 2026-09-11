@@ -1,3 +1,26 @@
+.mandat_schema_2026 <- function() {
+  tibble::tibble(
+    valtillfalle = character(), valklass = character(),
+    rakningstillfalle = character(), valtyp = character(),
+    valdatum = character(), valdatum_fg = character(), test = logical(),
+    senaste_uppdateringstid = character(), antal_uppdateringar = integer(),
+    rapporteringstid = character(), antal_valdistrikt_raknade = integer(),
+    antal_valdistrikt_som_ska_raknas = integer(), geografiniva = character(),
+    valomradesnamn = character(), valomradeskod = character(),
+    valkretsnamn = character(), valkretskod = character(),
+    valomradessparr_procent = double(), valkretssparr_procent = double(),
+    partibeteckning = character(), partiforkortning = character(),
+    partikod = character(), antal_mandat = integer(),
+    antal_fasta_mandat = integer(), antal_utjamningsmandat = integer(),
+    totalt_antal_mandat = integer(), totalt_antal_fasta_mandat = integer(),
+    totalt_antal_utjamningsmandat = integer(), antal_mandat_fg = integer(),
+    antal_fasta_mandat_fg = integer(), antal_utjamningsmandat_fg = integer(),
+    totalt_antal_mandat_fg = integer(), totalt_antal_fasta_mandat_fg = integer(),
+    totalt_antal_utjamningsmandat_fg = integer(), diff_antal_mandat = integer(),
+    status_jamforelse = character()
+  )
+}
+
 parse_mandat_2026 <- function(raw) {
 
   valtyp <- as_chr_na(raw$valtyp)
@@ -18,12 +41,31 @@ parse_mandat_2026 <- function(raw) {
     default = "valkrets"
   )
 
-  sum_int_na <- function(x) {
-    if (length(x) == 0 || all(is.na(x))) {
-      NA_integer_
-    } else {
-      as.integer(sum(x, na.rm = TRUE))
+  mandat_heltal <- function(x, namn) {
+    if (is.null(x)) return(NA_integer_)
+    if (length(x) == 1L && is.atomic(x) && is.na(x)) return(NA_integer_)
+    if (!is.numeric(x) || length(x) != 1L || !is.finite(x) ||
+        x < 0 || x != trunc(x) || x > .Machine$integer.max) {
+      stop("Mandatf\u00e4ltet `", namn, "` ska vara ett icke-negativt heltal.",
+           call. = FALSE)
     }
+    as.integer(x)
+  }
+
+  total_mandat <- function(raw_total, komponenter, namn) {
+    total <- mandat_heltal(raw_total, namn)
+    if (!is.na(total)) {
+      if (length(komponenter) > 0L && !anyNA(komponenter) &&
+          sum(as.double(komponenter)) != total) {
+        stop("Mandattotalen `", namn, "` st\u00e4mmer inte med partiernas mandat.",
+             call. = FALSE)
+      }
+      return(total)
+    }
+    if (!length(komponenter) || anyNA(komponenter)) return(NA_integer_)
+    summa <- sum(as.double(komponenter))
+    if (!is.finite(summa) || summa > .Machine$integer.max) return(NA_integer_)
+    as.integer(summa)
   }
 
   parse_omrade <- function(obj,
@@ -47,60 +89,46 @@ parse_mandat_2026 <- function(raw) {
           partibeteckning = as_chr_na(x$partibeteckning),
           partiforkortning = as_chr_na(x$partiforkortning),
           partikod = as_chr_na(x$partikod),
-          antal_mandat = as_int_na(x$antalMandat),
-          antal_fasta_mandat = as_int_na(x$antalFastaMandat),
+          antal_mandat = mandat_heltal(x[["antalMandat"]], "antalMandat"),
+          antal_fasta_mandat = mandat_heltal(x[["antalFastaMandat"]], "antalFastaMandat"),
           antal_utjamningsmandat =
-            as_int_na(x$antalUtjamningsmandat),
+            mandat_heltal(x[["antalUtjamningsmandat"]], "antalUtjamningsmandat"),
           antal_mandat_fg =
-            as_int_na(x$antalMandatForegaendeVal),
+            mandat_heltal(x[["antalMandatForegaendeVal"]], "antalMandatForegaendeVal"),
           antal_fasta_mandat_fg =
-            as_int_na(x$antalFastaMandatForegaendeVal),
+            mandat_heltal(x[["antalFastaMandatForegaendeVal"]], "antalFastaMandatForegaendeVal"),
           antal_utjamningsmandat_fg =
-            as_int_na(x$antalUtjamningsMandatForegaendeVal),
+            mandat_heltal(x[["antalUtjamningsMandatForegaendeVal"]], "antalUtjamningsMandatForegaendeVal"),
           diff_antal_mandat =
             as_int_na(x$forandringAntalMandat)
         )
       }) |>
       purrr::list_rbind()
 
-    totalt_antal_mandat <- as_int_na(obj$totaltAntalMandat)
-    if (is.na(totalt_antal_mandat)) {
-      totalt_antal_mandat <- sum_int_na(partier$antal_mandat)
-    }
-
-    totalt_antal_fasta_mandat <- as_int_na(obj$totaltAntalFastaMandat)
-    if (is.na(totalt_antal_fasta_mandat)) {
-      totalt_antal_fasta_mandat <-
-        sum_int_na(partier$antal_fasta_mandat)
-    }
-
-    totalt_antal_utjamningsmandat <-
-      as_int_na(obj$totaltAntalUtjamningsMandat)
-    if (is.na(totalt_antal_utjamningsmandat)) {
-      totalt_antal_utjamningsmandat <-
-        sum_int_na(partier$antal_utjamningsmandat)
-    }
-
-    totalt_antal_mandat_fg <-
-      as_int_na(obj$totaltAntalMandatForegaendeVal)
-    if (is.na(totalt_antal_mandat_fg)) {
-      totalt_antal_mandat_fg <-
-        sum_int_na(partier$antal_mandat_fg)
-    }
-
-    totalt_antal_fasta_mandat_fg <-
-      as_int_na(obj$totaltAntalFastaMandatForegaendeVal)
-    if (is.na(totalt_antal_fasta_mandat_fg)) {
-      totalt_antal_fasta_mandat_fg <-
-        sum_int_na(partier$antal_fasta_mandat_fg)
-    }
-
-    totalt_antal_utjamningsmandat_fg <-
-      as_int_na(obj$totaltAntalUtjamningsMandatForegaendeVal)
-    if (is.na(totalt_antal_utjamningsmandat_fg)) {
-      totalt_antal_utjamningsmandat_fg <-
-        sum_int_na(partier$antal_utjamningsmandat_fg)
-    }
+    totalt_antal_mandat <- total_mandat(
+      obj[["totaltAntalMandat"]], partier$antal_mandat, "totaltAntalMandat"
+    )
+    totalt_antal_fasta_mandat <- total_mandat(
+      obj[["totaltAntalFastaMandat"]], partier$antal_fasta_mandat,
+      "totaltAntalFastaMandat"
+    )
+    totalt_antal_utjamningsmandat <- total_mandat(
+      obj[["totaltAntalUtjamningsMandat"]], partier$antal_utjamningsmandat,
+      "totaltAntalUtjamningsMandat"
+    )
+    totalt_antal_mandat_fg <- total_mandat(
+      obj[["totaltAntalMandatForegaendeVal"]], partier$antal_mandat_fg,
+      "totaltAntalMandatForegaendeVal"
+    )
+    totalt_antal_fasta_mandat_fg <- total_mandat(
+      obj[["totaltAntalFastaMandatForegaendeVal"]], partier$antal_fasta_mandat_fg,
+      "totaltAntalFastaMandatForegaendeVal"
+    )
+    totalt_antal_utjamningsmandat_fg <- total_mandat(
+      obj[["totaltAntalUtjamningsMandatForegaendeVal"]],
+      partier$antal_utjamningsmandat_fg,
+      "totaltAntalUtjamningsMandatForegaendeVal"
+    )
 
     partier |>
       dplyr::transmute(
@@ -189,8 +217,5 @@ parse_mandat_2026 <- function(raw) {
     purrr::compact() |>
     purrr::list_rbind()
 
-  dplyr::bind_rows(
-    valomrade,
-    valkretsar
-  )
+  dplyr::bind_rows(.mandat_schema_2026(), valomrade, valkretsar)
 }

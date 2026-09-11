@@ -4,6 +4,15 @@ test_that("candidate table preserves its key and excludes invalid candidacies", 
   expect_equal(nrow(dplyr::distinct(out, kandidatnummer, valtyp, partikod)), nrow(out))
   expect_false("3" %in% out$kandidatnummer)
   expect_false(any(vapply(out, is.list, logical(1))))
+  expect_identical(names(out), c(
+    "valtillfalle", "kandidatnummer", "valtyp", "partikod",
+    "partiforkortning", "partibeteckning", "namn", "namn_varierar",
+    "antal_namn", "kon", "alder_pa_valdagen", "folkbokforingskommun",
+    "valomradeskod", "valomradesnamn", "valkretskod", "valkretsnamn",
+    "antal_valomraden", "flera_valomraden", "antal_valkretsar",
+    "flera_valkretsar", "antal_listor", "flera_listor", "antal_partier",
+    "flera_partier", "antal_valtyper", "flera_valtyper"
+  ))
   expect_type(out$kandidatnummer, "character")
   expect_type(out$alder_pa_valdagen, "integer")
   expect_type(out$namn_varierar, "logical")
@@ -60,7 +69,9 @@ test_that("candidate result pipeline respects availability without network acces
       )
     )
     out <- .add_kandidatresultat_2026(
-      fixture_kandidatnycklar(), fixture_kandidaturer(), "RD", progress = FALSE
+      dplyr::filter(make_kandidater_2026(fixture_kandidaturer()),
+                    valtyp == "RD", partikod == "A"),
+      fixture_kandidaturer(), "RD", progress = FALSE
     )
     expected <- if (available) c(TRUE, FALSE) else c(NA, NA)
     expect_identical(out$invald, expected)
@@ -68,5 +79,42 @@ test_that("candidate result pipeline respects availability without network acces
     expect_identical(out$antal_personroster_totalt, if (available) c(7L, 0L) else c(NA_integer_, NA_integer_))
     expect_equal(nrow(out), 2L)
     expect_false(any(vapply(out, is.list, logical(1))))
+    expect_identical(names(out), c(
+      "valtillfalle", "kandidatnummer", "valtyp", "partikod",
+      "partiforkortning", "partibeteckning", "namn", "namn_varierar",
+      "antal_namn", "kon", "alder_pa_valdagen", "folkbokforingskommun",
+      "valomradeskod", "valomradesnamn", "valkretskod", "valkretsnamn",
+      "antal_valomraden", "flera_valomraden", "antal_valkretsar",
+      "flera_valkretsar", "antal_listor", "flera_listor", "antal_partier",
+      "flera_partier", "antal_valtyper", "flera_valtyper",
+      "antal_personroster_totalt", "antal_personvalsomraden", "invald_valomradeskod",
+      "invald_valomradesnamn", "invald_valkretskod", "invald_valkretsnamn",
+      "invalsordning", "valgrund_id", "valgrund_text", "ersattargrupp",
+      "kvalificerad_personval", "invald"
+    ))
   }
+})
+
+test_that("positive candidate status survives partial data without inventing negatives", {
+  attr_value <- fixture_personval(TRUE)
+  attr(attr_value, "personval_available") <- NA
+  local_mocked_bindings(
+    .read_resultatindex_2026 = function(...) tibble::tibble(path = "s/rd/val_00_RD.zip"),
+    .parse_kandidatresultat_fil_2026 = function(...) list(
+      status = tibble::tibble(valtyp = "RD", valomradeskod = "00",
+                              valda_available = NA, personval_available = NA),
+      personroster = tibble::tibble(kandidatnummer = "1", valtyp = "RD", partikod = "A",
+                                    valomradeskod = "00", antal_personroster = 7L),
+      personroster_status = tibble::tibble(valtyp = "RD", valomradeskod = "00", partikod = "A",
+                                           personroster_available = NA),
+      personval = attr_value, valda = fixture_valda()
+    )
+  )
+  out <- .add_kandidatresultat_2026(
+    fixture_kandidatnycklar(), fixture_kandidaturer(), "RD", progress = FALSE
+  )
+  expect_identical(out$invald, c(TRUE, NA))
+  expect_identical(out$kvalificerad_personval, c(TRUE, NA))
+  expect_identical(out$antal_personvalsomraden, c(1L, NA_integer_))
+  expect_identical(out$antal_personroster_totalt, c(NA_integer_, NA_integer_))
 })

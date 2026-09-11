@@ -16,7 +16,8 @@ kandidaturer(
 \arguments{
 \item{ar}{Valår. För närvarande stöds 2026.}
 
-\item{val}{Valtyp: \code{"RD"}, \code{"RF"} eller \code{"KF"}. \code{NULL} ger alla.}
+\item{val}{En eller flera valtyper: \code{"RD"}, \code{"RF"} eller \code{"KF"}.
+\code{NULL} ger alla.}
 
 \item{source}{Datakälla: \code{"auto"}, \code{"local"} eller \code{"remote"}.
 \code{"local"} använder aldrig nätet och får inte kombineras med \code{update = TRUE}.
@@ -29,11 +30,17 @@ Lokal arkivering kräver en redan befintlig lokal fil.}
 \item{archive}{Om \code{TRUE}, sparas även en daterad snapshot.}
 }
 \value{
-En tibble med källnära kandidaturer, inklusive ogiltiga
-kandidaturer. Källans namn bevaras i \code{namn} och \code{giltig} anger giltighet.
+En tibble där en rad är en källrad för en kandidatur på en
+valsedel/lista i ett valområde och eventuell valkrets. En kandidat kan
+ha flera rader och ogiltiga kandidaturer bevaras. Identitetsfält omfattar
+valtyp, område, valkrets, parti, listnummer, ordning och kandidatnummer.
+Källans namn bevaras i \code{namn} och \code{giltig} är logical.
 }
 \description{
 Hämtar kandidaturdata från Valmyndigheten.
+}
+\examples{
+\dontrun{kandidaturer(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 }
 \seealso{
 \code{\link[=kandidater]{kandidater()}}, \link{valresultat-package}

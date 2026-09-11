@@ -13,9 +13,10 @@
 #' personröster har rapporterats. Personvalskvalificering bedöms separat.
 #'
 #' @param ar Valår. För närvarande stöds 2026.
-#' @param val Valtyp: `"RD"`, `"RF"` eller `"KF"`. `NULL` ger alla.
+#' @param val En eller flera valtyper: `"RD"`, `"RF"` eller `"KF"`.
+#'   `NULL` ger alla.
 #' @param resultat Om `TRUE`, kompletteras kandidaterna med personröster,
-#'   personval och invaldsuppgifter när dessa finns i resultatfilerna.
+#'   personval och invaldsuppgifter från slutliga resultatfiler.
 #' @param source Datakälla: `"auto"`, `"local"` eller `"remote"`.
 #'   `"local"` använder aldrig nätet och får inte kombineras med `update = TRUE`.
 #'   Lokal arkivering kräver en redan befintlig lokal fil.
@@ -30,6 +31,11 @@
 #'   Med `resultat = TRUE` tillkommer resultatkolumner. `invald` och
 #'   `kvalificerad_personval` är `NA` när relevant information saknas,
 #'   och `FALSE` när informationen finns men kandidaten inte uppfyller villkoret.
+#'   Samma regel gäller `invald`. `antal_personroster_totalt` är 0 endast när
+#'   komplett underlag saknar en rad för kandidaten; partiellt eller oklart
+#'   underlag ger `NA`. Antalsfält är integer och indikatorer logical.
+#' @examples
+#' \dontrun{kandidater(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 #' @seealso [kandidaturer()], [valda()], [valresultat-package]
 #' @export
 kandidater <- function(
@@ -43,16 +49,11 @@ kandidater <- function(
     progress = interactive()
 ) {
 
-  source <- match.arg(source)
-  .check_source_update(source, update)
+  source <- .check_public_args(
+    ar, "kandidater", source, data_dir, update, archive, progress
+  )
   val <- .valtyper(val)
-
-  if (!identical(as.integer(ar), 2026L)) {
-    stop(
-      "`kandidater()` st\u00f6der f\u00f6r n\u00e4rvarande endast val\u00e5ret 2026.",
-      call. = FALSE
-    )
-  }
+  .check_flag(resultat, "resultat")
 
   kandidaturdata <- kandidaturer(
     ar = ar,
@@ -96,7 +97,10 @@ kandidater <- function(
 #'
 #' @inheritParams kandidater
 #' @return En tibble med samma kolumner som `kandidater(resultat = TRUE)`,
-#'   filtrerad till kandidater med `invald == TRUE`.
+#'   och samma observationsnivå kandidatnummer × valtyp × partikod, filtrerad
+#'   till explicit `invald == TRUE`. Kandidater med okänd status ingår inte.
+#' @examples
+#' \dontrun{valda(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 #' @seealso [kandidater()], [ersattare()], [valresultat-package]
 #' @export
 valda <- function(

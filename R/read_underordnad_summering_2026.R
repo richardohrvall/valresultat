@@ -22,7 +22,7 @@ read_underordnad_summering_zip_2026 <- function(zip_file) {
 
       summering_file <- files$Name |>
         stringr::str_subset(
-          "(^|/)[^/]+_(preliminar|slutlig)_summering_(RD|RF)\\.json$"
+          "(^|/)[^/]+_(preliminar|slutlig)_summering(?:_[0-9]{2})?_(RD|RF)\\.json$"
         )
 
       if (length(summering_file) != 1) {

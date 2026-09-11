@@ -3,7 +3,8 @@
 #' Hämtar kandidaturdata från Valmyndigheten.
 #'
 #' @param ar Valår. För närvarande stöds 2026.
-#' @param val Valtyp: `"RD"`, `"RF"` eller `"KF"`. `NULL` ger alla.
+#' @param val En eller flera valtyper: `"RD"`, `"RF"` eller `"KF"`.
+#'   `NULL` ger alla.
 #' @param source Datakälla: `"auto"`, `"local"` eller `"remote"`.
 #'   `"local"` använder aldrig nätet och får inte kombineras med `update = TRUE`.
 #'   Lokal arkivering kräver en redan befintlig lokal fil.
@@ -11,8 +12,13 @@
 #' @param update Om `TRUE`, uppdateras den lokala arbetskopian.
 #' @param archive Om `TRUE`, sparas även en daterad snapshot.
 #'
-#' @return En tibble med källnära kandidaturer, inklusive ogiltiga
-#'   kandidaturer. Källans namn bevaras i `namn` och `giltig` anger giltighet.
+#' @return En tibble där en rad är en källrad för en kandidatur på en
+#'   valsedel/lista i ett valområde och eventuell valkrets. En kandidat kan
+#'   ha flera rader och ogiltiga kandidaturer bevaras. Identitetsfält omfattar
+#'   valtyp, område, valkrets, parti, listnummer, ordning och kandidatnummer.
+#'   Källans namn bevaras i `namn` och `giltig` är logical.
+#' @examples
+#' \dontrun{kandidaturer(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 #' @seealso [kandidater()], [valresultat-package]
 #' @export
 kandidaturer <- function(
@@ -24,16 +30,8 @@ kandidaturer <- function(
     archive = FALSE
 ) {
 
-  source <- match.arg(source)
-  .check_source_update(source, update)
+  source <- .check_public_args(ar, "kandidaturer", source, data_dir, update, archive)
   val <- .valtyper(val)
-
-  if (!identical(as.integer(ar), 2026L)) {
-    stop(
-      "`kandidaturer()` st\u00f6der f\u00f6r n\u00e4rvarande endast val\u00e5ret 2026.",
-      call. = FALSE
-    )
-  }
 
   path <- "parti/kandidaturer.csv"
   samling <- "val2026"
@@ -61,6 +59,7 @@ kandidaturer <- function(
     return(NULL)
   }
 
+  .check_text(val, "val", flera = TRUE)
   val <- toupper(val)
 
   allowed <- c("RD", "RF", "KF")

@@ -58,4 +58,4 @@ rsconnect/
 Thumbs.db
 
 # Generated integration-test log
-development/VALRESULTAT_INTEGRATION.txt
+development/*_INTEGRATION.txt

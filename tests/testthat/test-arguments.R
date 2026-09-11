@@ -5,11 +5,11 @@ test_that("public functions reject invalid arguments before reading files", {
   )
   for (fun in list(kandidaturer, kandidater, valda, mandat, ersattare)) {
     expect_error(fun(ar = 2022), "2026")
-    expect_error(fun(val = "EU"), "Okänd valtyp")
+    expect_error(fun(val = "EU"), "valtyp")
     expect_error(fun(source = "invalid"), "arg")
   }
-  expect_error(mandat(rakning = "invalid"), "arg")
-  expect_error(mandat(niva = "invalid"), "Okänd geografisk nivå")
+  expect_error(mandat(rakning = "invalid"), "rakning")
+  expect_error(mandat(niva = "invalid"), "geografisk")
   expect_null(.valtyper(NULL))
   expect_identical(.valtyper(c("rd", "KF", "rd")), c("RD", "KF"))
 })
@@ -21,7 +21,7 @@ test_that("missing candidate columns and duplicate elections are rejected", {
                "inga giltiga")
   expect_error(add_valda_to_kandidater_2026(
     fixture_kandidatnycklar(), dplyr::bind_rows(fixture_valda(), fixture_valda())
-  ), "vald mer än en gång")
+  ), "vald mer")
 })
 
 test_that("valda is a filtered candidate view", {

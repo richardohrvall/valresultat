@@ -17,7 +17,8 @@ ersattare(
 \arguments{
 \item{ar}{Valår. För närvarande stöds 2026.}
 
-\item{val}{Valtyp: \code{"RD"}, \code{"RF"} eller \code{"KF"}. \code{NULL} ger alla.}
+\item{val}{En eller flera valtyper: \code{"RD"}, \code{"RF"} eller \code{"KF"}.
+\code{NULL} ger alla.}
 
 \item{source}{Datakälla: \code{"auto"}, \code{"local"} eller \code{"remote"}.
 \code{"local"} använder aldrig nätet och får inte kombineras med \code{update = TRUE}.
@@ -32,12 +33,18 @@ Lokal arkivering kräver en redan befintlig lokal fil.}
 \item{progress}{Visa progressindikator.}
 }
 \value{
-En tibble med relationer mellan valda ledamöter och ersättare,
-inklusive ersättarordning, ersättargrupp och valgrund.
+En tibble där en rad är relationen mellan en vald ledamot och en
+ersättare inom val, område/valkrets, parti och ersättargrupp.
+\code{ledamot_kandidatnummer}, \code{ersattare_kandidatnummer} och
+\code{ersattarordning} identifierar relationen. Ordning är integer; koder och
+namn är character. Ett känt tomt resultat behåller samma typade schema.
 }
 \description{
 Hämtar relationer mellan valda ledamöter och deras ersättare från
 den slutliga mandatfördelningen.
+}
+\examples{
+\dontrun{ersattare(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 }
 \seealso{
 \code{\link[=valda]{valda()}}, \code{\link[=mandat]{mandat()}}, \link{valresultat-package}

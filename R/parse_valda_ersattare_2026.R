@@ -196,8 +196,9 @@ parse_valda_ersattare_2026 <- function(raw) {
   }
 
   valkretsar <- valomrade$valkretsLista
+  kallval <- .valda_kallval_2026(raw)
 
-  if (!is.null(valkretsar) && length(valkretsar) > 0) {
+  if (identical(kallval$niva, "valkrets")) {
 
     parsed <- purrr::map(
       valkretsar,
@@ -217,13 +218,7 @@ parse_valda_ersattare_2026 <- function(raw) {
       purrr::map("ersattare") |>
       purrr::list_rbind()
 
-    # Om valkretsnivån faktiskt innehåller valda använder vi den.
-    if (nrow(valda_valkrets) > 0) {
-      return(list(
-        valda = valda_valkrets,
-        ersattare = ersattare_valkrets
-      ))
-    }
+    return(list(valda = valda_valkrets, ersattare = ersattare_valkrets))
   }
 
   # Annars använder vi valområdesnivån. Om även den saknar valda

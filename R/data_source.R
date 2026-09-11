@@ -44,6 +44,7 @@
 val_data_dir <- function(data_dir = NULL) {
 
   if (!is.null(data_dir)) {
+    .check_data_dir(data_dir)
     return(normalizePath(
       data_dir,
       winslash = "/",
@@ -56,6 +57,8 @@ val_data_dir <- function(data_dir = NULL) {
   if (is.null(data_dir)) {
     return(NULL)
   }
+
+  .check_data_dir(data_dir)
 
   normalizePath(
     data_dir,

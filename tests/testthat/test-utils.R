@@ -25,9 +25,10 @@ test_that("index parsing ignores malformed lines and preserves paths", {
 })
 
 test_that("result file selection excludes summaries and preliminary files", {
-  paths <- c("s/rd/val_00_RD.zip", "s/rf/val_01_RF.zip", "s/kf/val_0180_KF.zip",
-             "p/rd/val_00_RD.zip", "s/kf/val_01_KF.zip", "s/rf/val_00_RF_summering.zip",
-             "s/rd/val_00_RD.zip.bak")
+  paths <- c("s/rd/Val_2026_slutlig_00_RD.zip", "s/rf/Val_2026_slutlig_01_RF.zip",
+             "s/kf/Val_2026_slutlig_0180_KF.zip",
+             "p/rd/Val_2026_preliminar_00_RD.zip", "s/kf/Val_2026_slutlig_01_KF.zip",
+             "s/rf/Val_2026_slutlig_OS_RF.zip", "s/rd/Val_2026_slutlig_00_RD.zip.bak")
   out <- .resultat_paths_2026(tibble::tibble(path = paths), c("RD", "RF", "KF"))
   expect_identical(out$path, paths[1:3])
   expect_identical(out$valtyp, c("RD", "RF", "KF"))

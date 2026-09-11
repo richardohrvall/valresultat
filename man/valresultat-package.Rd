@@ -5,10 +5,12 @@
 \alias{valresultat-package}
 \title{Svenska valdata från Valmyndigheten}
 \description{
-Läs kandidaturer, kandidater, mandat och ersättarrelationer för valet 2026.
+Läs harmoniserade valresultat, kandidaturer, kandidater, mandat och
+ersättarrelationer för valet 2026 med bland annat \code{\link[=valresultat]{valresultat()}}.
 Resultatfiler väljs via \code{index.md5}. Optionen
 \code{valresultat.resultatsamling_2026} väljer resultatsamling och har för närvarande
-standardvärdet \code{"genrep2026"}.
+standardvärdet \code{"val2026"}. Test-/utvecklingssamlingen \code{"genrep2026"} kan
+väljas uttryckligen.
 }
 \details{
 En lokal rådatamapp anges med \code{data_dir} eller optionen
@@ -24,6 +26,14 @@ kan använda nedladdningslogiken med \code{source = "auto"} eller \code{"remote"
 \verb{source = "local", update = TRUE} ger ett fel före filåtkomst.
 Lokal arkivering kopierar endast en redan befintlig lokal fil; saknas filen
 ges ett fel utan nedladdning.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/richardohrvall/valresultat}
+  \item Report bugs at \url{https://github.com/richardohrvall/valresultat/issues}
+}
+
 }
 \author{
 \strong{Maintainer}: Richard Öhrvall \email{richard.ohrvall@gmail.com}

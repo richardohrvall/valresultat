@@ -17,7 +17,8 @@ valda(
 \arguments{
 \item{ar}{Valår. För närvarande stöds 2026.}
 
-\item{val}{Valtyp: \code{"RD"}, \code{"RF"} eller \code{"KF"}. \code{NULL} ger alla.}
+\item{val}{En eller flera valtyper: \code{"RD"}, \code{"RF"} eller \code{"KF"}.
+\code{NULL} ger alla.}
 
 \item{source}{Datakälla: \code{"auto"}, \code{"local"} eller \code{"remote"}.
 \code{"local"} använder aldrig nätet och får inte kombineras med \code{update = TRUE}.
@@ -33,11 +34,15 @@ Lokal arkivering kräver en redan befintlig lokal fil.}
 }
 \value{
 En tibble med samma kolumner som \code{kandidater(resultat = TRUE)},
-filtrerad till kandidater med \code{invald == TRUE}.
+och samma observationsnivå kandidatnummer × valtyp × partikod, filtrerad
+till explicit \code{invald == TRUE}. Kandidater med okänd status ingår inte.
 }
 \description{
 Bekväm vy av \code{kandidater()} som endast innehåller kandidater med
 \code{invald == TRUE}.
+}
+\examples{
+\dontrun{valda(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 }
 \seealso{
 \code{\link[=kandidater]{kandidater()}}, \code{\link[=ersattare]{ersattare()}}, \link{valresultat-package}

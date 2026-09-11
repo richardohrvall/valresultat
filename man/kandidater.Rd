@@ -18,10 +18,11 @@ kandidater(
 \arguments{
 \item{ar}{Valår. För närvarande stöds 2026.}
 
-\item{val}{Valtyp: \code{"RD"}, \code{"RF"} eller \code{"KF"}. \code{NULL} ger alla.}
+\item{val}{En eller flera valtyper: \code{"RD"}, \code{"RF"} eller \code{"KF"}.
+\code{NULL} ger alla.}
 
 \item{resultat}{Om \code{TRUE}, kompletteras kandidaterna med personröster,
-personval och invaldsuppgifter när dessa finns i resultatfilerna.}
+personval och invaldsuppgifter från slutliga resultatfiler.}
 
 \item{source}{Datakälla: \code{"auto"}, \code{"local"} eller \code{"remote"}.
 \code{"local"} använder aldrig nätet och får inte kombineras med \code{update = TRUE}.
@@ -42,6 +43,9 @@ byggd från giltiga kandidaturer. Namn normaliseras deterministiskt och
 Med \code{resultat = TRUE} tillkommer resultatkolumner. \code{invald} och
 \code{kvalificerad_personval} är \code{NA} när relevant information saknas,
 och \code{FALSE} när informationen finns men kandidaten inte uppfyller villkoret.
+Samma regel gäller \code{invald}. \code{antal_personroster_totalt} är 0 endast när
+komplett underlag saknar en rad för kandidaten; partiellt eller oklart
+underlag ger \code{NA}. Antalsfält är integer och indikatorer logical.
 }
 \description{
 Skapar en analysvänlig kandidatfil.
@@ -56,6 +60,9 @@ verifierat komplett för partiet i alla valområden från kandidatens giltiga
 kandidaturer. Saknas kandidaten i ett sådant komplett underlag blir totalen
 0. Saknat, partiellt eller motsägelsefullt underlag ger \code{NA}, även om vissa
 personröster har rapporterats. Personvalskvalificering bedöms separat.
+}
+\examples{
+\dontrun{kandidater(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 }
 \seealso{
 \code{\link[=kandidaturer]{kandidaturer()}}, \code{\link[=valda]{valda()}}, \link{valresultat-package}
