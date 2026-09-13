@@ -65,3 +65,22 @@ rådatakatalog. `library(valresultat)` fungerade, standardsamlingen var
 `val2026` och namespace exporterade exakt `valresultat`, `mandat`,
 `kandidaturer`, `kandidater`, `valda` och `ersattare`. Källpaketet innehöll
 inga utvecklingsfiler, referensdokument, Git-filer eller lokala rådata.
+
+## Metadataavvikelse upptäckt i live-data 2026-09-13
+
+Den tekniska specifikationen anger råvärdet `rakningstillfalle = "preliminär"`,
+medan paketets publika API avsiktligt använder `rakning = "preliminar"`.
+Skillnaden upptäcktes först när preliminära live-data kunde läsas; de lokala
+genrepsfiler som användes inför 0.1.0 innehöll inget preliminärt underlag och
+kunde därför inte fånga felet. Från 0.1.1 normaliseras specifikationens råvärde
+internt till `"preliminar"`. Den äldre/testade råformen `"preliminar"` stöds
+fortsatt.
+
+Livefilen visade samtidigt hur pågående distriktsrapportering representeras:
+alla 6 626 distriktsobjekt innehöll nyckeln `rostfordelning`, men värdet var
+`NULL` för de 6 588 distrikt som ännu inte rapporterat och ett objekt för de 38
+rapporterade distrikten. Från 0.1.1 hoppas uttryckliga `NULL`-resultat över på
+alla implementerade resultatnivåer. Om samtliga relevanta objekt är
+orapporterade returneras ett typat nollradersresultat. En saknad nyckel eller
+en felaktig befintlig struktur ger fortfarande fel, medan uttryckliga
+nollvärden bevaras som rapporterade resultat.

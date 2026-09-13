@@ -1,3 +1,12 @@
+# valresultat 0.1.1
+
+* Normalizes Valmyndigheten's live preliminary-count metadata
+  `"preliminär"` to the package value `"preliminar"`. The unaccented form
+  used by older test data remains supported.
+* Skips geographic result objects whose existing `rostfordelning` key is
+  explicitly `NULL` while counting is in progress. Explicit zero results are
+  retained, and a missing key or malformed result structure remains an error.
+
 # valresultat 0.1.0
 
 * Adds the first public API for harmonised 2026 election results: `valresultat()`,

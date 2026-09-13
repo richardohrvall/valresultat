@@ -71,8 +71,10 @@ och är \code{NA} för valdistrikt. Distriktens \code{valdel} kommer från
 \code{valdeltagandeVallokal}, övriga nivåers från \code{valdeltagande}.
 \code{over_sparr} fylls bara från ett uttryckligt relevant besked i mandatkällan.
 Övriga partier får en rad endast om källnoden finns; explicit noll behålls.
-Verifierat tom valkretsindelning ger en typad tom tabell, medan saknad
-röstfördelning för ett existerande område ger fel.
+Under pågående räkning hoppas områden med en uttrycklig
+\code{rostfordelning = NULL} över. Om inget område ännu har rapporterat returneras
+en typad tabell med noll rader. En saknad \code{rostfordelning}-nyckel eller ett
+felaktigt resultatobjekt ger däremot fel, och uttryckliga nollresultat behålls.
 
 \code{data_dir} går före optionen \code{valresultat.data_dir}. Resultatsamlingen
 väljs med optionen \code{valresultat.resultatsamling_2026} (default \code{"val2026"}).

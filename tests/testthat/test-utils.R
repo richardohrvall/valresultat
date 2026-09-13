@@ -13,6 +13,27 @@ test_that("scalar helpers preserve missingness and types", {
   expect_identical(as_int_na(0L), 0L)
 })
 
+test_that("counting metadata accepts live and legacy preliminary spelling", {
+  expect_identical(
+    .normalisera_rakningstillfalle_2026("preliminär"),
+    "preliminar"
+  )
+  expect_identical(
+    .normalisera_rakningstillfalle_2026("preliminar"),
+    "preliminar"
+  )
+  expect_identical(
+    .normalisera_rakningstillfalle_2026("slutlig"),
+    "slutlig"
+  )
+  expect_identical(
+    .normalisera_rakningsmetadata_2026(list(
+      rakningstillfalle = "preliminär"
+    ))$rakningstillfalle,
+    "preliminar"
+  )
+})
+
 test_that("index parsing ignores malformed lines and preserves paths", {
   md5 <- paste(rep("A", 32), collapse = "")
   out <- parse_index_2026(c(

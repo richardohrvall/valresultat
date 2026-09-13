@@ -106,10 +106,12 @@
 
 .parse_valresultat <- function(raw, kalla, val, niva, rakning, path) {
   schema <- .valresultat_schema()
+  raw <- .normalisera_rakningsmetadata_2026(raw)
   .valresultat_object(raw, "rot")
   .valresultat_values(raw)
   .valresultat_scalar(raw$valtillfalle, "valtillfalle")
-  if (!identical(raw$valtyp, val) || !identical(raw$rakningstillfalle, rakning)) {
+  if (!identical(raw$valtyp, val) ||
+      !identical(.normalisera_rakningstillfalle_2026(raw$rakningstillfalle), rakning)) {
     stop("R\u00e5metadata st\u00e4mmer inte med vald valtyp/rakning.", call. = FALSE)
   }
   filkod <- sub(".*_([^_]+)_[A-Z]{2}\\.zip$", "\\1", path)
@@ -117,12 +119,14 @@
   poster <- list()
   # En metadatapost per källområde; ingen geografisk aggregering.
   lagg_till <- function(obj, geo) {
+    if (!.rostfordelning_tillganglig_2026(obj)) return(invisible(FALSE))
     finns <- .valresultat_votes(obj)
     geografi <- as.list(rep(NA_character_, length(geo_names)))
     names(geografi) <- geo_names
     geografi$geografiniva <- niva
     for (namn in names(geo)) geografi[[namn]] <- as_chr_na(geo[[namn]])
     poster[[length(poster) + 1L]] <<- list(obj = obj, geo = geografi, ovriga = finns)
+    invisible(TRUE)
   }
   if (kalla == "D") {
     distrikt <- .valresultat_array(raw$valdistrikt, "valdistrikt")
@@ -153,7 +157,7 @@
         for (krets in kretsar) {
           lagg_till(krets, c(geo, list(kommunvalkretskod = krets$kod, kommunvalkretsnamn = krets$namn)))
         }
-        raw$kommuner[[i]]$rostfordelning <- NULL
+        raw$kommuner[[i]]["rostfordelning"] <- list(NULL)
       }
     }
   } else if (kalla == "M") {
@@ -177,7 +181,7 @@
         if (val == "KF") kretsgeo <- c(kretsgeo, list(kommunvalkretskod = krets$kod, kommunvalkretsnamn = krets$namnValkrets))
         lagg_till(krets, kretsgeo)
       }
-      raw$valomrade$rostfordelning <- NULL
+      raw$valomrade["rostfordelning"] <- list(NULL)
     }
   } else {
     .valresultat_object(raw$helaLandet, "helaLandet")
@@ -191,7 +195,7 @@
         lagg_till(lan[[i]], list(lankod = lan[[i]]$lankod, lannamn = lan[[i]]$namn))
         raw$helaLandet$lan[[i]]$kommuner <- NULL
       }
-      raw$helaLandet$rostfordelning <- NULL
+      raw$helaLandet["rostfordelning"] <- list(NULL)
     }
   }
   if (!length(poster)) return(schema)

@@ -61,21 +61,28 @@ test_that("personal votes reconcile across lists and district summaries", {
 })
 
 test_that("municipal constituency names are consistent across result parsers", {
-  district <- list(kommunvalkretsKod = "01", kommunvalkretsNamn = "Krets ett")
+  district <- list(kommunvalkretsKod = "01", kommunvalkretsNamn = "Krets ett",
+                   rostfordelning = fixture_roster())
   votes <- parse_rostfordelning_2026(list(valtyp = "RD", valdistrikt = list(district)))
   expect_true(all(c("kommunvalkretskod", "kommunvalkretsnamn") %in% names(votes)))
   expect_true(all(votes$kommunvalkretskod == "01"))
   expect_true(all(votes$kommunvalkretsnamn == "Krets ett"))
 
   summaries <- parse_underordnad_summering_2026(list(valtyp = "RD", kommuner = list(list(
-    kommunkod = "0180", kommunvalkretsar = list(list(kod = "01", namn = "Krets ett"))
+    kommunkod = "0180", rostfordelning = fixture_roster(),
+    kommunvalkretsar = list(list(kod = "01", namn = "Krets ett",
+                                  rostfordelning = fixture_roster()))
   ))))
   constituency <- dplyr::filter(summaries, geografiniva == "kommunvalkrets")
-  expect_identical(constituency$kommunvalkretskod, "01")
-  expect_identical(constituency$kommunvalkretsnamn, "Krets ett")
+  expect_true(all(constituency$kommunvalkretskod == "01"))
+  expect_true(all(constituency$kommunvalkretsnamn == "Krets ett"))
 
-  national <- parse_overordnad_summering_rf_2026(list(valtyp = "RF", helaLandet = list()))
-  expect_identical(national$kommunvalkretskod, NA_character_)
-  expect_identical(national$kommunvalkretsnamn, NA_character_)
-  expect_identical(national$partibeteckning, "Övriga partier")
+  national <- parse_overordnad_summering_rf_2026(list(
+    valtyp = "RF", helaLandet = list(
+      rostfordelning = fixture_roster(), lan = list()
+    )
+  ))
+  expect_true(all(is.na(national$kommunvalkretskod)))
+  expect_true(all(is.na(national$kommunvalkretsnamn)))
+  expect_true("Övriga partier" %in% national$partibeteckning)
 })

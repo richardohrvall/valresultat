@@ -53,6 +53,8 @@ parse_overordnad_summering_kf_2026 <- function(raw) {
                            kommunnamn = NA_character_,
                            kommunkod = NA_character_) {
 
+    if (!.rostfordelning_tillganglig_2026(obj)) return(NULL)
+
     giltiga <- obj$rostfordelning$rosterPaverkaMandat
     ogiltiga <- obj$rostfordelning$rosterEjPaverkaMandat
 
@@ -69,7 +71,7 @@ parse_overordnad_summering_kf_2026 <- function(raw) {
         # Val
         valtillfalle = as_chr_na(raw$valtillfalle),
         valklass = as_chr_na(raw$valklass),
-        rakningstillfalle = as_chr_na(raw$rakningstillfalle),
+        rakningstillfalle = .normalisera_rakningstillfalle_2026(raw$rakningstillfalle),
         valtyp = as_chr_na(raw$valtyp),
         valdatum = as_chr_na(raw$valdatum),
         valdatum_fg = as_chr_na(raw$tidigareValdatum),

@@ -87,6 +87,124 @@ test_that("source selection is strict, unique, and never falls back", {
   expect_error(fixture_parse_resultat(raw = raw), "valomradeskod")
 })
 
+test_that("live preliminary metadata is normalized to the public spelling", {
+  raw <- fixture_resultatraw("RD", "M", "preliminar")
+  raw$valtillfalle <- "Val_2026"
+  raw$rakningstillfalle <- "preliminär"
+  out <- fixture_parse_resultat(
+    val = "RD", niva = "riket", rakning = "preliminar", raw = raw
+  )
+  expect_identical(unique(out$valtillfalle), "Val_2026")
+  expect_identical(unique(out$valtyp), "RD")
+  expect_identical(unique(out$rakningstillfalle), "preliminar")
+})
+
+test_that("unreported preliminary districts are skipped for RD, RF and KF", {
+  gor_orapporterat <- function(x) {
+    x["rostfordelning"] <- list(NULL)
+    x$rapporteringsTid <- ""
+    x
+  }
+  for (val in c("RD", "RF", "KF")) {
+    raw <- fixture_resultatraw(val, "D", "preliminar")
+    raw$rakningstillfalle <- "preliminär"
+    raw$antalValdistriktRaknade <- 1L
+    raw$antalValdistriktSomSkaRaknas <- 2L
+    raw$valdistrikt[[2]] <- gor_orapporterat(raw$valdistrikt[[2]])
+
+    direkt <- parse_rostfordelning_2026(raw)
+    expect_identical(unique(direkt$valdistriktskod), "01800001", info = val)
+    out <- fixture_parse_resultat(
+      val, "valdistrikt", "preliminar", raw = raw
+    )
+    expect_identical(unique(out$valdistriktskod), "01800001", info = val)
+    expect_identical(unique(out$rakningstillfalle), "preliminar", info = val)
+
+    nollrad <- raw
+    nollrad$valdistrikt[[1]]$rostfordelning$rosterPaverkaMandat$
+      partiRoster[[1]]$antalRoster <- 0L
+    noll <- fixture_parse_resultat(
+      val, "valdistrikt", "preliminar", raw = nollrad
+    )
+    expect_identical(
+      noll$antal_roster[noll$partikod == "0001"], 0L, info = val
+    )
+
+    alla_null <- raw
+    alla_null$valdistrikt[[1]] <- gor_orapporterat(
+      alla_null$valdistrikt[[1]]
+    )
+    alla_null$antalValdistriktRaknade <- 0L
+    tom <- parse_rostfordelning_2026(alla_null)
+    expect_equal(nrow(tom), 0L, info = val)
+    expect_identical(names(tom), names(direkt), info = val)
+    expect_identical(vapply(tom, typeof, ""), vapply(direkt, typeof, ""), info = val)
+    publik_tom <- fixture_parse_resultat(
+      val, "valdistrikt", "preliminar", raw = alla_null
+    )
+    expect_equal(nrow(publik_tom), 0L, info = val)
+    expect_identical(names(publik_tom), names(.valresultat_schema()), info = val)
+    expect_identical(
+      vapply(publik_tom, typeof, ""),
+      vapply(.valresultat_schema(), typeof, ""),
+      info = val
+    )
+  }
+})
+
+test_that("missing or malformed district result structures still fail", {
+  raw <- fixture_resultatraw("RD", "D", "preliminar")
+  raw$valdistrikt[[1]]$rostfordelning <- NULL
+  expect_error(parse_rostfordelning_2026(raw), "Saknad nyckel.*rostfordelning")
+  expect_error(
+    fixture_parse_resultat("RD", "valdistrikt", "preliminar", raw),
+    "Saknad nyckel.*rostfordelning"
+  )
+  raw <- fixture_resultatraw("RD", "D", "preliminar")
+  raw$valdistrikt[[1]]$rostfordelning <- list()
+  expect_error(
+    fixture_parse_resultat("RD", "valdistrikt", "preliminar", raw),
+    "rostfordelning"
+  )
+  raw <- fixture_resultatraw("RD", "D", "preliminar")
+  raw$valdistrikt[[2]]["rostfordelning"] <- list(NULL)
+  expect_error(
+    fixture_parse_resultat("RD", "valdistrikt", "preliminar", raw),
+    "Rapporterade valdistrikt"
+  )
+})
+
+test_that("explicit null results are skipped in other preliminary source types", {
+  under <- fixture_resultatraw("RD", "U", "preliminar")
+  kommun2 <- under$kommuner[[1]]
+  kommun2$kommunkod <- "0181"
+  kommun2["rostfordelning"] <- list(NULL)
+  under$kommuner[[2]] <- kommun2
+  expect_identical(
+    unique(fixture_parse_resultat("RD", "kommun", "preliminar", under)$kommunkod),
+    "0180"
+  )
+
+  mandat_raw <- fixture_resultatraw("RF", "M", "preliminar")
+  mandat_raw$valomrade$valkretsLista[[2]]["rostfordelning"] <- list(NULL)
+  expect_identical(
+    unique(fixture_parse_resultat(
+      "RF", "regionvalkrets", "preliminar", mandat_raw
+    )$valkretskod),
+    "01"
+  )
+
+  over <- fixture_resultatraw("KF", "O", "preliminar")
+  lan2 <- over$helaLandet$lan[[1]]
+  lan2$lankod <- "02"
+  lan2["rostfordelning"] <- list(NULL)
+  over$helaLandet$lan[[2]] <- lan2
+  expect_identical(
+    unique(fixture_parse_resultat("KF", "lan", "preliminar", over)$lankod),
+    "01"
+  )
+})
+
 test_that("absent, null, empty and zero other-party nodes are distinct in every source", {
   for (kalla in c("D", "U", "M", "O")) {
     val <- if (kalla == "O") "KF" else "RD"

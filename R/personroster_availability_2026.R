@@ -94,8 +94,11 @@
     states <- vapply(noder, .personrost_partistatus, logical(1))
     available <- .personrost_status(states)
     if (!tackning || !as_chr_na(raw$valtyp) %in% c("RD", "RF", "KF") ||
-        !as_chr_na(raw$rakningstillfalle) %in% c("slutlig", "preliminar")) available <- NA
-    if (isTRUE(available) && (raw$rakningstillfalle != "slutlig" || raknade != antal)) available <- NA
+        !.normalisera_rakningstillfalle_2026(raw$rakningstillfalle) %in%
+          c("slutlig", "preliminar")) available <- NA
+    if (isTRUE(available) &&
+        (.normalisera_rakningstillfalle_2026(raw$rakningstillfalle) != "slutlig" ||
+         raknade != antal)) available <- NA
     status <- dplyr::bind_rows(status, tibble::tibble(valtyp = as_chr_na(raw$valtyp),
       valomradeskod = valomradeskod, partikod = kod, personroster_available = available))
     if (isTRUE(available)) {

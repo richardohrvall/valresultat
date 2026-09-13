@@ -1,6 +1,22 @@
 parse_rostfordelning_2026 <- function(raw) {
 
   vd <- raw$valdistrikt
+  rapporterade <- vapply(
+    vd,
+    \(x) .rostfordelning_tillganglig_2026(x, "valdistrikt"),
+    logical(1)
+  )
+  antal_raknade <- as_int_na(raw$antalValdistriktRaknade)
+  antal_som_ska_raknas <- as_int_na(raw$antalValdistriktSomSkaRaknas)
+  if (!is.na(antal_som_ska_raknas) && antal_som_ska_raknas != length(vd)) {
+    stop("Antalet valdistrikt st\u00e4mmer inte med `antalValdistriktSomSkaRaknas`.",
+         call. = FALSE)
+  }
+  if (!is.na(antal_raknade) && antal_raknade != sum(rapporterade)) {
+    stop("Rapporterade valdistrikt st\u00e4mmer inte med `antalValdistriktRaknade`.",
+         call. = FALSE)
+  }
+  vd <- vd[rapporterade]
   vd_id <- seq_along(vd)
 
   # Distriktsnivå ----------------------------------------------------------
@@ -373,7 +389,7 @@ parse_rostfordelning_2026 <- function(raw) {
       # Val
       valtillfalle = as_chr_na(raw$valtillfalle),
       valklass = as_chr_na(raw$valklass),
-      rakningstillfalle = as_chr_na(raw$rakningstillfalle),
+      rakningstillfalle = .normalisera_rakningstillfalle_2026(raw$rakningstillfalle),
       valtyp = as_chr_na(raw$valtyp),
       valdatum = as_chr_na(raw$valdatum),
       valdatum_fg = as_chr_na(raw$tidigareValdatum),

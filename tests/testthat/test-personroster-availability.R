@@ -73,7 +73,7 @@ test_that("area completeness requires every district and party and completed cou
     function(r) {r$valdistrikt[[2]] <- r$valdistrikt[[1]]; r},
     function(r) {r$valdistrikt[[2]]$valomradeskod <- "01"; r},
     function(r) {r$valdistrikt[[2]]$rostfordelning$rosterPaverkaMandat$partiRoster <- list(); r},
-    function(r) {r$rakningstillfalle <- "preliminar"; r},
+    function(r) {r$rakningstillfalle <- "preliminär"; r},
     function(r) {r$antalValdistriktRaknade <- NULL; r},
     function(r) {r$valdistrikt[[2]]$rostfordelning$rosterPaverkaMandat$partiRoster[[1]]$summeradePersonroster <- NULL; r}
   )) {
@@ -86,7 +86,7 @@ test_that("area completeness requires every district and party and completed cou
   }
   raw$antalValdistriktRaknade <- 0L
   expect_false(.personrostunderlag_2026(raw, "00")$status$personroster_available)
-  raw$rakningstillfalle <- "preliminar"
+  raw$rakningstillfalle <- "preliminär"
   expect_false(.personrostunderlag_2026(raw, "00")$status$personroster_available)
   expect_identical(.personrost_status(logical()), NA)
   expect_identical(.personrost_status(c(TRUE, FALSE)), NA)

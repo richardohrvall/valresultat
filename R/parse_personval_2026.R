@@ -46,7 +46,7 @@ parse_personval_2026 <- function(raw) {
   rakning_komplett <- function(obj) {
     a <- obj$antalValdistriktRaknade
     b <- obj$antalValdistriktSomSkaRaknas
-    identical(as_chr_na(raw$rakningstillfalle), "slutlig") &&
+    identical(.normalisera_rakningstillfalle_2026(raw$rakningstillfalle), "slutlig") &&
       .personrost_heltal(a) && .personrost_heltal(b) && a == b
   }
 
@@ -87,7 +87,7 @@ parse_personval_2026 <- function(raw) {
       \(x) tibble::tibble(
         valtillfalle = as_chr_na(raw$valtillfalle),
         valklass = as_chr_na(raw$valklass),
-        rakningstillfalle = as_chr_na(raw$rakningstillfalle),
+        rakningstillfalle = .normalisera_rakningstillfalle_2026(raw$rakningstillfalle),
         valtyp = valtyp,
         valdatum = as_chr_na(raw$valdatum),
         valdatum_fg = as_chr_na(raw$tidigareValdatum),

@@ -134,9 +134,10 @@ mandat <- function(
         file,
         type = "mandatfordelning"
       )
+      raw <- .normalisera_rakningsmetadata_2026(raw)
 
       if (!identical(as_chr_na(raw$valtyp), paths$valtyp[[match(path, paths$path)]]) ||
-          !identical(as_chr_na(raw$rakningstillfalle), rakning)) {
+          !identical(.normalisera_rakningstillfalle_2026(raw$rakningstillfalle), rakning)) {
         stop("Mandatfilens valtyp eller r\u00e4kning st\u00e4mmer inte med fils\u00f6kv\u00e4gen.", call. = FALSE)
       }
 

@@ -83,7 +83,7 @@
 
 .valda_nodstatus_2026 <- function(raw, obj) {
   if (!"valda" %in% names(obj) || is.null(obj$valda)) return(FALSE)
-  if (!identical(as_chr_na(raw$rakningstillfalle), "slutlig") ||
+  if (!identical(.normalisera_rakningstillfalle_2026(raw$rakningstillfalle), "slutlig") ||
       !.personrost_heltal(obj$antalValdistriktRaknade) ||
       !.personrost_heltal(obj$antalValdistriktSomSkaRaknas) ||
       obj$antalValdistriktRaknade != obj$antalValdistriktSomSkaRaknas ||

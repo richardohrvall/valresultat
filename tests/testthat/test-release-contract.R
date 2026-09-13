@@ -70,6 +70,23 @@ test_that("mandat accepts a valid level selected from val NULL", {
   expect_false(any(vapply(out, is.list, logical(1))))
 })
 
+test_that("mandat accepts live preliminary counting metadata", {
+  raw <- mandat_raw_fixture("RD", "00")
+  raw$valtillfalle <- "Val_2026"
+  raw$rakningstillfalle <- "preliminär"
+  local_mocked_bindings(
+    .read_resultatindex_2026 = function(...) tibble::tibble(
+      path = "p/rd/Val_2026_preliminar_00_RD.zip"
+    ),
+    .resultat_file_2026 = function(...) "fixture.zip",
+    read_raw_json_zip_2026 = function(...) raw
+  )
+  out <- mandat(
+    val = "RD", niva = "riket", rakning = "preliminar", progress = FALSE
+  )
+  expect_identical(unique(out$rakningstillfalle), "preliminar")
+})
+
 test_that("mandate totals never turn incomplete components into partial sums", {
   pairs <- list(
     c("totaltAntalMandat", "antalMandat", "totalt_antal_mandat"),

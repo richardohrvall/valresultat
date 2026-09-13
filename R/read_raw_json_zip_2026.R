@@ -75,8 +75,10 @@ read_raw_json_zip_2026 <- function(
     exdir = exdir
   )
 
-  jsonlite::fromJSON(
+  raw <- jsonlite::fromJSON(
     file.path(exdir, json_file),
     simplifyVector = FALSE
   )
+
+  .normalisera_rakningsmetadata_2026(raw)
 }
