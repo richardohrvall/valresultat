@@ -25,30 +25,54 @@
 #' i valt index. Räkningstillfället bevaras i `rakningstillfalle`.
 #'
 #' En rad avser val, geografiskt område och parti/kategori. Områdestotaler
-#' upprepas på partiraderna och ska inte summeras över partier. Samtliga
-#' källor ger samma 83 kolumner. Datum, tidsstämplar och geografiska koder
+#' upprepas på partiraderna och ska inte summeras över partier. Internt
+#' harmoniseras alla källor till samma 83 kolumner. Det publika resultatet
+#' innehåller en gemensam analyskärna och endast den geografiska identifikation
+#' som är relevant för vald `niva`. Datum, tidsstämplar och geografiska koder
 #' är character, antal integer, andelar double i procent och indikatorer
 #' logical. Saknade eller ej tillämpliga fält är typade `NA`.
 #' Historik och differenser bevaras endast där källan publicerar dem.
 #'
 #' `antal_valdistrikt_raknade` och `antal_valdistrikt_som_ska_raknas` avser
-#' filpopulationen; motsvarigheterna med suffix `_omrade` avser radens område
-#' och är `NA` för valdistrikt. Distriktens `valdel` kommer från
-#' `valdeltagandeVallokal`, övriga nivåers från `valdeltagande`.
+#' filpopulationen. Motsvarigheterna med suffix `_omrade` exponeras bara där
+#' den returnerade områdespopulationen är en annan analytiskt relevant nivå.
+#' `antal_rostberattigade_raknade` finns på aggregerade nivåer och är källans
+#' antal röstberättigade i hittills räknade valdistrikt för området. På
+#' valdistriktsnivå ligger `raknat` och distriktets `rapporteringstid` direkt
+#' efter geografin. Där används `antal_rostberattigade` för distriktets eget
+#' antal när rådata anger det, även om distriktet ännu inte är räknat.
+#' Distriktens `valdel` kommer från `valdeltagandeVallokal`, övriga nivåers
+#' från `valdeltagande`.
 #' `over_sparr` fylls bara från ett uttryckligt relevant besked i mandatkällan.
 #' Övriga partier får en rad endast om källnoden finns; explicit noll behålls.
-#' Under pågående räkning hoppas områden med en uttrycklig
-#' `rostfordelning = NULL` över. Om inget område ännu har rapporterat returneras
-#' en typad tabell med noll rader. En saknad `rostfordelning`-nyckel eller ett
-#' felaktigt resultatobjekt ger däremot fel, och uttryckliga nollresultat behålls.
+#' På valdistriktsnivå är `raknat` `TRUE` för distrikt med ett rapporterat
+#' röstfördelningsobjekt och `FALSE` när den befintliga
+#' `rostfordelning`-nyckeln är `NULL`. Oräknade distrikt behålls med det
+#' officiella partiuniversumet från mandatfilens röstfördelning i samma ZIP;
+#' deras aktuella röster, andelar och resultatmått är typade `NA`. En
+#' uttrycklig nolla i ett rapporterat resultat behålls som 0. En saknad
+#' `rostfordelning`-nyckel eller en motsägelsefull struktur ger fel.
+#'
+#' De geografiska kolumnerna är: valdistrikt — `valdistriktskod`,
+#' `valdistriktsnamn`, `valdistriktstyp`, `kommunkod`, `kommunnamn`, `lankod`,
+#' `lannamn`, `valomradeskod`, `valomradesnamn`, `valkretskod`,
+#' `valkretsnamn`, `kommunvalkretskod`, `kommunvalkretsnamn`; kommun —
+#' `lankod`, `lannamn`, `kommunkod`, `kommunnamn`; kommunvalkrets — samma
+#' läns- och kommunidentitet samt `kommunvalkretskod`,
+#' `kommunvalkretsnamn`; län — `lankod`, `lannamn`; region —
+#' `valomradeskod`, `valomradesnamn`; region- och riksdagsvalkrets —
+#' `valomradeskod`, `valomradesnamn`, `valkretskod`, `valkretsnamn`; riket —
+#' inga ytterligare geografiska kolumner. `geografiniva` finns alltid.
 #'
 #' `data_dir` går före optionen `valresultat.data_dir`. Resultatsamlingen
 #' väljs med optionen `valresultat.resultatsamling_2026` (default `"val2026"`).
 #' Test-/utvecklingssamlingen `"genrep2026"` kan väljas uttryckligen.
 #' `source = "local"` använder aldrig nätet. Lokal arkivering kopierar endast
 #' befintliga filer; en snapshot från samma datum får ersättas.
-#' @return En tibble med 83 kolumner, en geografisk nivå och unika
-#'   val-/områdes-/partinycklar. Inga mandat eller personröster ingår.
+#' @return En tibble med ett nivåspecifikt publikt kolumnkontrakt, en geografisk
+#'   nivå och unika val-/områdes-/partinycklar. Inga mandat eller personröster
+#'   ingår. `dplyr::bind_rows()` kan användas för att skapa unionen av kolumner
+#'   från flera nivåer.
 #' @seealso [mandat()], [valresultat-package]
 #' @examples
 #' \dontrun{
@@ -81,8 +105,11 @@ valresultat <- function(
   resultat <- purrr::map(paths, function(path) {
     tryCatch({
       file <- .resultat_file_2026(path, source, data_dir, update, archive)
-      raw <- .read_valresultat_raw(file, kalla, val, rakning)
-      .parse_valresultat(raw, kalla, val, niva, rakning, path)
+      raw <- .read_valresultat_raw(
+        file, kalla, val, rakning, distrikt_context = kalla == "D"
+      )
+      harmoniserat <- .parse_valresultat(raw, kalla, val, niva, rakning, path)
+      .valresultat_public_2026(harmoniserat, niva, raw)
     }, error = function(e) {
       stop(path, ": ", conditionMessage(e), call. = FALSE)
     })
@@ -141,7 +168,7 @@ valresultat <- function(
   paths
 }
 
-.read_valresultat_raw <- function(file, kalla, val, rakning) {
+.read_valresultat_raw <- function(file, kalla, val, rakning, distrikt_context = FALSE) {
   if (grepl("^https?://", file)) {
     lokal <- tempfile(fileext = ".zip")
     on.exit(unlink(lokal), add = TRUE)
@@ -160,7 +187,21 @@ valresultat <- function(
     stop("F\u00f6rv\u00e4ntade exakt en JSON-fil f\u00f6r ", kalla, "/", val, "/", rakning,
          "; hittade ", length(poster), ".", call. = FALSE)
   }
-  con <- unz(file, poster, open = "r", encoding = "UTF-8")
-  on.exit(close(con), add = TRUE)
-  jsonlite::fromJSON(paste(readLines(con, warn = FALSE), collapse = "\n"), simplifyVector = FALSE)
+  exdir <- tempfile()
+  dir.create(exdir)
+  on.exit(unlink(exdir, recursive = TRUE), add = TRUE)
+  utils::unzip(file, files = poster, exdir = exdir)
+  raw <- jsonlite::fromJSON(file.path(exdir, poster), simplifyVector = FALSE)
+  if (distrikt_context) {
+    if (kalla != "D") stop("Distriktskontext kr\u00e4ver k\u00e4lltyp D.", call. = FALSE)
+    context <- list(
+      mandat = .read_valresultat_raw(file, "M", val, rakning),
+      summering = NULL
+    )
+    if (val %in% c("RD", "RF")) {
+      context$summering <- .read_valresultat_raw(file, "U", val, rakning)
+    }
+    attr(raw, "valresultat_distrikt_context") <- context
+  }
+  raw
 }

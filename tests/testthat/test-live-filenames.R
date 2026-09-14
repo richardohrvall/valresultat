@@ -53,7 +53,9 @@ test_that("live JSON names inside ZIP are recognized for all source types", {
   for (type in c("rostfordelning", "mandatfordelning", "summering")) {
     expect_identical(read_raw_json_zip_2026(live, type = type)$valtyp, "RD")
   }
-  expect_identical(.read_valresultat_raw(live, "D", "RD", "slutlig")$valtyp, "RD")
+  distrikt <- .read_valresultat_raw(live, "D", "RD", "slutlig")
+  expect_identical(distrikt$valtyp, "RD")
+  expect_identical(distrikt$namn, "Norrmalm-Östermalm")
   expect_identical(.read_valresultat_raw(live, "M", "RD", "slutlig")$valtyp, "RD")
   expect_identical(.read_valresultat_raw(live, "U", "RD", "slutlig")$valtyp, "RD")
   # Genrepsformen utan valområdeskoden i summeringsnamnet stöds fortsatt.

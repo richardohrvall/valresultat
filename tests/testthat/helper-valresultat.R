@@ -68,6 +68,16 @@ fixture_resultatraw <- function(val = "RD", kalla = "M", rakning = "slutlig") {
     raw$helaLandet <- omrade
     raw$helaLandet$lan <- list(lan)
   }
+  if (kalla == "D") {
+    attr(raw, "valresultat_distrikt_context") <- list(
+      mandat = fixture_resultatraw(val, "M", rakning),
+      summering = if (val %in% c("RD", "RF")) {
+        fixture_resultatraw(val, "U", rakning)
+      } else {
+        NULL
+      }
+    )
+  }
   raw
 }
 
@@ -81,4 +91,15 @@ fixture_parse_resultat <- function(val = "RD", niva = "riket", rakning = "slutli
   kalla <- .valresultat_kalla(val, niva)
   if (is.null(raw)) raw <- fixture_resultatraw(val, kalla, rakning)
   .parse_valresultat(raw, kalla, val, niva, rakning, fixture_resultatpath(val, kalla, rakning))
+}
+
+fixture_public_resultat <- function(
+    val = "RD", niva = "riket", rakning = "slutlig", raw = NULL
+) {
+  kalla <- .valresultat_kalla(val, niva)
+  if (is.null(raw)) raw <- fixture_resultatraw(val, kalla, rakning)
+  harmoniserat <- .parse_valresultat(
+    raw, kalla, val, niva, rakning, fixture_resultatpath(val, kalla, rakning)
+  )
+  .valresultat_public_2026(harmoniserat, niva, raw)
 }

@@ -1,3 +1,14 @@
+# valresultat (development)
+
+* Gives `valresultat()` an analysis-oriented, level-specific public column
+  contract while retaining the internal 83-column harmonised schema.
+* Retains unreported voting districts with `raknat = FALSE`, official
+  constituency-specific party rows and typed missing result values.
+* Completes unambiguous district geography from official 2026 structures in
+  the same ZIP and a fixed 2026 county-code lookup.
+* Keeps only analytically distinct reporting scopes in each public level's
+  column contract and places district reporting status next to its geography.
+
 # valresultat 0.1.1
 
 * Normalizes Valmyndigheten's live preliminary-count metadata

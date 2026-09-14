@@ -5,7 +5,10 @@
 The aim is to provide analysis-ready data on election results, mandates, candidates, candidacies, elected representatives and substitutes while preserving important information from the official source files.
 
 > [!WARNING]
-> `valresultat` is under active development. Development currently focuses on the 2026 Swedish elections, and the public API and data structures may still change. The current 2026 implementation has primarily been developed and tested against Valmyndigheten's public rehearsal/test data.
+> `valresultat` is under active development. Development currently focuses on
+> the 2026 Swedish elections, and the public API and data structures may still
+> change. Testing uses deterministic fixtures, Valmyndigheten's rehearsal data
+> and targeted checks against current live result files.
 
 ## Installation
 
@@ -85,7 +88,9 @@ Supported geographic levels depend on the election type and on the official sour
 
 ## Election results
 
-`valresultat()` returns party results in a common, harmonised structure across geographic levels and counting stages as far as the source material allows.
+`valresultat()` uses a common analysis core across geographic levels and counting
+stages, while returning only the geographic columns relevant to the requested
+level. Geographic identifiers appear early in the result.
 
 For example:
 
@@ -97,6 +102,14 @@ valresultat(
   niva = "valdistrikt"
 )
 
+# Keep only voting districts that have reported a vote distribution
+valresultat(
+  val = "RD",
+  rakning = "preliminar",
+  niva = "valdistrikt"
+) |>
+  dplyr::filter(raknat)
+
 # Final parliamentary result at national level
 valresultat(
   val = "RD",
@@ -105,7 +118,15 @@ valresultat(
 )
 ```
 
-Variables that are not applicable or not available in a particular source are represented as `NA`. The package uses official results at the requested geographic level when such results are provided by Valmyndigheten rather than automatically reconstructing them from lower-level data.
+At voting-district level, `raknat` distinguishes reported districts from valid
+districts whose `rostfordelning` is still `NULL`. Unreported districts remain in
+the table, with party rows from the official party universe and `NA` in current
+result fields. An explicitly reported zero remains 0. Variables that are not
+available are otherwise represented as typed `NA`.
+
+The package uses official results at the requested geographic level when those
+results are provided by Valmyndigheten rather than automatically reconstructing
+them from lower-level data.
 
 ## Candidates and candidacies
 

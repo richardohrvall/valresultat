@@ -7,3 +7,7 @@ ett riksresultat: partierna har sammanlagt 6 respektive 4 röster, ogiltiga
 `valresultat-schema.txt` är det frysta kolumnkontraktet från den godkända
 planen: namn och R-typ i publiceringsordning. Det ska inte genereras från
 produktionskod vid testkörning.
+
+`valresultat-public-columns.txt` fryser den exakta publika kolumnordningen för
+varje geografisk nivå. Det publika kontraktet är avsiktligt smalare än det
+interna 83-kolumnsschemat.

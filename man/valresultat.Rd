@@ -37,8 +37,10 @@ RF \code{"region"}, KF \code{"kommun"}. Se nivåerna nedan.}
 \item{progress}{Visa progressindikator.}
 }
 \value{
-En tibble med 83 kolumner, en geografisk nivå och unika
-val-/områdes-/partinycklar. Inga mandat eller personröster ingår.
+En tibble med ett nivåspecifikt publikt kolumnkontrakt, en geografisk
+nivå och unika val-/områdes-/partinycklar. Inga mandat eller personröster
+ingår. \code{dplyr::bind_rows()} kan användas för att skapa unionen av kolumner
+från flera nivåer.
 }
 \description{
 Läser en valtyp, en räkning och en geografisk nivå från Valmyndighetens
@@ -59,22 +61,44 @@ och KF:s länsresultat läses ur överordnad summering (OS), om filen finns
 i valt index. Räkningstillfället bevaras i \code{rakningstillfalle}.
 
 En rad avser val, geografiskt område och parti/kategori. Områdestotaler
-upprepas på partiraderna och ska inte summeras över partier. Samtliga
-källor ger samma 83 kolumner. Datum, tidsstämplar och geografiska koder
+upprepas på partiraderna och ska inte summeras över partier. Internt
+harmoniseras alla källor till samma 83 kolumner. Det publika resultatet
+innehåller en gemensam analyskärna och endast den geografiska identifikation
+som är relevant för vald \code{niva}. Datum, tidsstämplar och geografiska koder
 är character, antal integer, andelar double i procent och indikatorer
 logical. Saknade eller ej tillämpliga fält är typade \code{NA}.
 Historik och differenser bevaras endast där källan publicerar dem.
 
 \code{antal_valdistrikt_raknade} och \code{antal_valdistrikt_som_ska_raknas} avser
-filpopulationen; motsvarigheterna med suffix \verb{_omrade} avser radens område
-och är \code{NA} för valdistrikt. Distriktens \code{valdel} kommer från
-\code{valdeltagandeVallokal}, övriga nivåers från \code{valdeltagande}.
+filpopulationen. Motsvarigheterna med suffix \verb{_omrade} exponeras bara där
+den returnerade områdespopulationen är en annan analytiskt relevant nivå.
+\code{antal_rostberattigade_raknade} finns på aggregerade nivåer och är källans
+antal röstberättigade i hittills räknade valdistrikt för området. På
+valdistriktsnivå ligger \code{raknat} och distriktets \code{rapporteringstid} direkt
+efter geografin. Där används \code{antal_rostberattigade} för distriktets eget
+antal när rådata anger det, även om distriktet ännu inte är räknat.
+Distriktens \code{valdel} kommer från \code{valdeltagandeVallokal}, övriga nivåers
+från \code{valdeltagande}.
 \code{over_sparr} fylls bara från ett uttryckligt relevant besked i mandatkällan.
 Övriga partier får en rad endast om källnoden finns; explicit noll behålls.
-Under pågående räkning hoppas områden med en uttrycklig
-\code{rostfordelning = NULL} över. Om inget område ännu har rapporterat returneras
-en typad tabell med noll rader. En saknad \code{rostfordelning}-nyckel eller ett
-felaktigt resultatobjekt ger däremot fel, och uttryckliga nollresultat behålls.
+På valdistriktsnivå är \code{raknat} \code{TRUE} för distrikt med ett rapporterat
+röstfördelningsobjekt och \code{FALSE} när den befintliga
+\code{rostfordelning}-nyckeln är \code{NULL}. Oräknade distrikt behålls med det
+officiella partiuniversumet från mandatfilens röstfördelning i samma ZIP;
+deras aktuella röster, andelar och resultatmått är typade \code{NA}. En
+uttrycklig nolla i ett rapporterat resultat behålls som 0. En saknad
+\code{rostfordelning}-nyckel eller en motsägelsefull struktur ger fel.
+
+De geografiska kolumnerna är: valdistrikt — \code{valdistriktskod},
+\code{valdistriktsnamn}, \code{valdistriktstyp}, \code{kommunkod}, \code{kommunnamn}, \code{lankod},
+\code{lannamn}, \code{valomradeskod}, \code{valomradesnamn}, \code{valkretskod},
+\code{valkretsnamn}, \code{kommunvalkretskod}, \code{kommunvalkretsnamn}; kommun —
+\code{lankod}, \code{lannamn}, \code{kommunkod}, \code{kommunnamn}; kommunvalkrets — samma
+läns- och kommunidentitet samt \code{kommunvalkretskod},
+\code{kommunvalkretsnamn}; län — \code{lankod}, \code{lannamn}; region —
+\code{valomradeskod}, \code{valomradesnamn}; region- och riksdagsvalkrets —
+\code{valomradeskod}, \code{valomradesnamn}, \code{valkretskod}, \code{valkretsnamn}; riket —
+inga ytterligare geografiska kolumner. \code{geografiniva} finns alltid.
 
 \code{data_dir} går före optionen \code{valresultat.data_dir}. Resultatsamlingen
 väljs med optionen \code{valresultat.resultatsamling_2026} (default \code{"val2026"}).

@@ -11,7 +11,7 @@ test_that("all 48 election-level-count combinations select the decided source", 
   local_mocked_bindings(
     .read_resultatindex_2026 = function(...) tibble::tibble(path = paths),
     .resultat_file_2026 = function(path, ...) path,
-    .read_valresultat_raw = function(file, kalla, val, rakning) {
+    .read_valresultat_raw = function(file, kalla, val, rakning, ...) {
       last <<- list(file = file, kalla = kalla)
       fixture_resultatraw(val, kalla, rakning)
     }
@@ -27,8 +27,10 @@ test_that("all 48 election-level-count combinations select the decided source", 
       expect_identical(last$file, fixture_resultatpath(val, expected[[val]][i], rakning))
       expect_identical(unique(out$geografiniva), nivaer[i])
       expect_identical(unique(out$rakningstillfalle), rakning)
-      expect_identical(ncol(out), 83L)
-      expect_identical(vapply(out, typeof, ""), vapply(.valresultat_schema(), typeof, ""))
+      expect_identical(names(out), .valresultat_public_columns_2026(nivaer[i]))
+      typer <- vapply(.valresultat_schema(), typeof, "")
+      typer <- c(typer, raknat = "logical")
+      expect_identical(unname(vapply(out, typeof, "")), unname(typer[names(out)]))
     }
   }
 })
@@ -61,7 +63,7 @@ test_that("NULL levels are identical to explicit main levels for both counts", {
       vapply(c("RD", "RF", "KF"), function(v) fixture_resultatpath(v, "M", r), "")
     }))),
     .resultat_file_2026 = function(path, ...) path,
-    .read_valresultat_raw = function(file, kalla, val, rakning) fixture_resultatraw(val, kalla, rakning)
+    .read_valresultat_raw = function(file, kalla, val, rakning, ...) fixture_resultatraw(val, kalla, rakning)
   )
   for (v in c("RD", "RF", "KF")) for (r in c("slutlig", "preliminar")) {
     expect_identical(valresultat(val = tolower(v), rakning = r, progress = FALSE),
@@ -99,7 +101,7 @@ test_that("live preliminary metadata is normalized to the public spelling", {
   expect_identical(unique(out$rakningstillfalle), "preliminar")
 })
 
-test_that("unreported preliminary districts are skipped for RD, RF and KF", {
+test_that("the canonical district parser skips unreported RD, RF and KF districts", {
   gor_orapporterat <- function(x) {
     x["rostfordelning"] <- list(NULL)
     x$rapporteringsTid <- ""
@@ -139,17 +141,155 @@ test_that("unreported preliminary districts are skipped for RD, RF and KF", {
     expect_equal(nrow(tom), 0L, info = val)
     expect_identical(names(tom), names(direkt), info = val)
     expect_identical(vapply(tom, typeof, ""), vapply(direkt, typeof, ""), info = val)
-    publik_tom <- fixture_parse_resultat(
+    kanonisk_tom <- fixture_parse_resultat(
       val, "valdistrikt", "preliminar", raw = alla_null
     )
-    expect_equal(nrow(publik_tom), 0L, info = val)
-    expect_identical(names(publik_tom), names(.valresultat_schema()), info = val)
+    expect_equal(nrow(kanonisk_tom), 0L, info = val)
+    expect_identical(names(kanonisk_tom), names(.valresultat_schema()), info = val)
     expect_identical(
-      vapply(publik_tom, typeof, ""),
+      vapply(kanonisk_tom, typeof, ""),
       vapply(.valresultat_schema(), typeof, ""),
       info = val
     )
   }
+})
+
+test_that("public district results retain counted and uncounted districts", {
+  gor_orapporterat <- function(x) {
+    x["rostfordelning"] <- list(NULL)
+    x$rapporteringsTid <- ""
+    x
+  }
+  for (val in c("RD", "RF", "KF")) {
+    raw <- fixture_resultatraw(val, "D", "preliminar")
+    raw$rakningstillfalle <- "preliminär"
+    raw$antalValdistriktRaknade <- 1L
+    raw$valdistrikt[[1]]$rostfordelning$rosterPaverkaMandat$
+      partiRoster[[1]]$antalRoster <- 0L
+    raw$valdistrikt[[2]]$antalRostberattigade <- 777L
+    raw$valdistrikt[[2]] <- gor_orapporterat(raw$valdistrikt[[2]])
+
+    out <- fixture_public_resultat(val, "valdistrikt", "preliminar", raw)
+    expect_setequal(unique(out$valdistriktskod), c("01800001", "01800002"))
+    expect_identical(unique(out$raknat[out$valdistriktskod == "01800001"]), TRUE, info = val)
+    expect_identical(unique(out$raknat[out$valdistriktskod == "01800002"]), FALSE, info = val)
+    expect_true(all(is.na(out$antal_roster[!out$raknat])), info = val)
+    expect_true(all(is.na(out$andel_roster[!out$raknat])), info = val)
+    expect_identical(unique(out$antal_rostberattigade[!out$raknat]), 777L, info = val)
+    expect_false("antal_rostberattigade_raknade" %in% names(out), info = val)
+    expect_identical(out$antal_roster[out$raknat & out$partikod == "0001"], 0L, info = val)
+    expect_equal(dplyr::n_distinct(out$valdistriktskod[out$raknat]), 1L, info = val)
+    expect_identical(
+      dplyr::n_distinct(out$valdistriktskod[out$raknat]),
+      unique(out$antal_valdistrikt_raknade),
+      info = val
+    )
+
+    tidigare <- fixture_parse_resultat(val, "valdistrikt", "preliminar", raw)
+    rapporterat <- dplyr::filter(out, raknat)
+    kompletterade <- c(
+      "kommunnamn", "lannamn", "valomradesnamn", "valkretskod", "valkretsnamn"
+    )
+    jamfor <- setdiff(intersect(names(tidigare), names(rapporterat)), kompletterade)
+    expect_identical(
+      dplyr::arrange(rapporterat[jamfor], partikod),
+      dplyr::arrange(tidigare[jamfor], partikod),
+      info = val
+    )
+  }
+})
+
+test_that("public district results handle none and all counted", {
+  for (val in c("RD", "RF", "KF")) {
+    alla <- fixture_resultatraw(val, "D", "preliminar")
+    out_alla <- fixture_public_resultat(val, "valdistrikt", "preliminar", alla)
+    expect_true(all(out_alla$raknat), info = val)
+    expect_equal(dplyr::n_distinct(out_alla$valdistriktskod), 2L, info = val)
+
+    inga <- fixture_resultatraw(val, "D", "preliminar")
+    inga$valdistrikt <- lapply(inga$valdistrikt, function(x) {
+      x["rostfordelning"] <- list(NULL)
+      x$rapporteringsTid <- ""
+      x
+    })
+    inga$antalValdistriktRaknade <- 0L
+    out_inga <- fixture_public_resultat(val, "valdistrikt", "preliminar", inga)
+    expect_false(any(out_inga$raknat), info = val)
+    expect_equal(dplyr::n_distinct(out_inga$valdistriktskod), 2L, info = val)
+    expect_true(all(is.na(out_inga$antal_roster)), info = val)
+    expect_true(all(is.na(out_inga$andel_roster)), info = val)
+    expect_false(any(is.na(out_inga$partikod)), info = val)
+  }
+})
+
+test_that("uncounted districts use the official constituency party universe", {
+  raw <- fixture_resultatraw("RD", "D", "preliminar")
+  raw$valdistrikt[[2]]$kretskod <- "02"
+  raw$valdistrikt[[2]]["rostfordelning"] <- list(NULL)
+  raw$valdistrikt[[2]]$rapporteringsTid <- ""
+  raw$antalValdistriktRaknade <- 1L
+  context <- attr(raw, "valresultat_distrikt_context")
+  extra <- context$mandat$valomrade$valkretsLista[[2]]$rostfordelning$
+    rosterPaverkaMandat$partiRoster[[1]]
+  extra$partikod <- "0003"
+  extra$partibeteckning <- "Parti C"
+  extra$partiforkortning <- "C"
+  context$mandat$valomrade$valkretsLista[[2]]$rostfordelning$
+    rosterPaverkaMandat$partiRoster[[3]] <- extra
+  attr(raw, "valresultat_distrikt_context") <- context
+
+  out <- fixture_public_resultat("RD", "valdistrikt", "preliminar", raw)
+  expect_setequal(out$partikod[!out$raknat], c("0001", "0002", "0003"))
+  expect_false("0003" %in% out$partikod[out$raknat])
+
+  context$mandat$valomrade$valkretsLista[[2]]$rostfordelning$
+    rosterPaverkaMandat$rosterOvrigaPartier <- list(antalRoster = 0, andelRoster = 0)
+  attr(raw, "valresultat_distrikt_context") <- context
+  med_ovriga <- fixture_public_resultat("RD", "valdistrikt", "preliminar", raw)
+  special <- med_ovriga[!med_ovriga$raknat & med_ovriga$ovriga_partier, ]
+  expect_equal(nrow(special), 1L)
+  expect_true(is.na(special$partikod))
+  expect_true(is.na(special$antal_roster))
+})
+
+test_that("official party universes are used for both counting stages", {
+  for (val in c("RD", "RF", "KF")) for (rakning in c("preliminar", "slutlig")) {
+    raw <- fixture_resultatraw(val, "D", rakning)
+    raw$valdistrikt[[2]]["rostfordelning"] <- list(NULL)
+    raw$valdistrikt[[2]]$rapporteringsTid <- ""
+    raw$antalValdistriktRaknade <- 1L
+    context <- attr(raw, "valresultat_distrikt_context")
+    nod <- context$mandat$valomrade$valkretsLista[[1]]
+    expected <- vapply(
+      nod$rostfordelning$rosterPaverkaMandat$partiRoster,
+      function(x) x$partikod, character(1)
+    )
+    out <- fixture_public_resultat(val, "valdistrikt", rakning, raw)
+    expect_setequal(out$partikod[!out$raknat], expected)
+  }
+})
+
+test_that("district parties outside the official universe are rejected", {
+  raw <- fixture_resultatraw("RD", "D", "preliminar")
+  raw$valdistrikt[[1]]$rostfordelning$rosterPaverkaMandat$
+    partiRoster[[1]]$partikod <- "9999"
+  expect_error(
+    fixture_public_resultat("RD", "valdistrikt", "preliminar", raw),
+    "saknas i mandatfilens partiuniversum"
+  )
+})
+
+test_that("district geography is completed from official 2026 context", {
+  for (val in c("RD", "RF", "KF")) {
+    out <- fixture_public_resultat(val, "valdistrikt")
+    expect_false(anyNA(out$kommunnamn), info = val)
+    expect_false(anyNA(out$lannamn), info = val)
+    expect_false(anyNA(out$valomradesnamn), info = val)
+    expect_false(anyNA(out$valkretskod), info = val)
+    expect_false(anyNA(out$valkretsnamn), info = val)
+  }
+  expect_equal(.valresultat_lannamn_2026("09"), "Gotlands län")
+  expect_true(is.na(.valresultat_lannamn_2026("99")))
 })
 
 test_that("missing or malformed district result structures still fail", {
@@ -335,6 +475,84 @@ test_that("the 83-column contract matches the frozen design, including empty out
     expect_identical(names(out), contract$namn)
     expect_identical(unname(vapply(out, typeof, "")), contract$typ)
   }
+})
+
+test_that("every public level has an exact frozen column contract", {
+  kontrakt <- readLines(test_path("fixtures", "valresultat-public-columns.txt"), warn = FALSE)
+  delar <- strsplit(kontrakt, "|", fixed = TRUE)
+  for (rad in delar) {
+    niva <- rad[1]
+    kolumner <- strsplit(rad[2], ",", fixed = TRUE)[[1]]
+    val <- switch(niva,
+      lan = "KF", region = "RF", regionvalkrets = "RF",
+      riksdagsvalkrets = "RD", "RD"
+    )
+    out <- fixture_public_resultat(val, niva)
+    expect_identical(names(out), kolumner, info = niva)
+    typer <- c(vapply(.valresultat_schema(), typeof, ""), raknat = "logical")
+    expect_identical(
+      unname(vapply(out, typeof, "")), unname(typer[kolumner]), info = niva
+    )
+  }
+})
+
+test_that("public reporting metadata exposes only analytically distinct scopes", {
+  distrikt <- fixture_public_resultat("RD", "valdistrikt")
+  geo_slut <- match("kommunvalkretsnamn", names(distrikt))
+  expect_identical(
+    names(distrikt)[geo_slut + seq_len(2L)], c("raknat", "rapporteringstid")
+  )
+  expect_false("antal_rostberattigade_raknade" %in% names(distrikt))
+
+  aggregerade <- c(
+    kommun = "RD", kommunvalkrets = "RD", lan = "KF", region = "RF",
+    regionvalkrets = "RF", riksdagsvalkrets = "RD", riket = "RD"
+  )
+  for (niva in names(aggregerade)) {
+    out <- fixture_public_resultat(aggregerade[[niva]], niva)
+    expect_true("antal_rostberattigade_raknade" %in% names(out), info = niva)
+    expect_true(
+      match("rapporteringstid", names(out)) <
+        match("senaste_uppdateringstid", names(out)),
+      info = niva
+    )
+  }
+
+  for (niva in c("lan", "region", "regionvalkrets", "riksdagsvalkrets", "riket")) {
+    expect_false(
+      "senaste_uppdateringstid_omrade" %in%
+        names(fixture_public_resultat(aggregerade[[niva]], niva)),
+      info = niva
+    )
+  }
+  for (niva in c("kommun", "kommunvalkrets")) {
+    expect_true(
+      "senaste_uppdateringstid_omrade" %in%
+        names(fixture_public_resultat(aggregerade[[niva]], niva)),
+      info = niva
+    )
+  }
+  for (niva in c("region", "riket")) {
+    out <- fixture_public_resultat(aggregerade[[niva]], niva)
+    expect_false("antal_valdistrikt_raknade_omrade" %in% names(out), info = niva)
+    expect_false("antal_valdistrikt_som_ska_raknas_omrade" %in% names(out), info = niva)
+  }
+  for (niva in c(
+    "kommun", "kommunvalkrets", "lan", "regionvalkrets", "riksdagsvalkrets"
+  )) {
+    out <- fixture_public_resultat(aggregerade[[niva]], niva)
+    expect_true("antal_valdistrikt_raknade_omrade" %in% names(out), info = niva)
+    expect_true("antal_valdistrikt_som_ska_raknas_omrade" %in% names(out), info = niva)
+  }
+})
+
+test_that("public results from different levels can be row-bound", {
+  distrikt <- fixture_public_resultat("RD", "valdistrikt")
+  riket <- fixture_public_resultat("RD", "riket")
+  out <- dplyr::bind_rows(distrikt, riket)
+  expect_setequal(unique(out$geografiniva), c("valdistrikt", "riket"))
+  expect_true("raknat" %in% names(out))
+  expect_true(all(is.na(out$raknat[out$geografiniva == "riket"])))
 })
 
 test_that("local index and ZIP pipeline never uses the network, including archival", {
