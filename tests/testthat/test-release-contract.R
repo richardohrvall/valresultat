@@ -120,6 +120,57 @@ test_that("mandate totals never turn incomplete components into partial sums", {
   expect_identical(names(parse_mandat_2026(raw)), names(.mandat_schema_2026()))
 })
 
+test_that("explicit historical mandate totals are authoritative", {
+  pairs <- list(
+    c("totaltAntalMandatForegaendeVal", "totalt_antal_mandat_fg"),
+    c("totaltAntalFastaMandatForegaendeVal", "totalt_antal_fasta_mandat_fg"),
+    c("totaltAntalUtjamningsMandatForegaendeVal", "totalt_antal_utjamningsmandat_fg")
+  )
+  for (p in pairs) {
+    raw <- mandat_raw_fixture()
+    raw$valomrade[[p[1]]] <- 31L
+    out <- parse_mandat_2026(raw)
+    expect_identical(unique(out[[p[2]]]), 31L, info = paste(p, collapse = "/"))
+  }
+})
+
+test_that("explicit current mandate totals still require matching components", {
+  totals <- c("totaltAntalMandat", "totaltAntalFastaMandat",
+              "totaltAntalUtjamningsMandat")
+  for (total in totals) {
+    raw <- mandat_raw_fixture()
+    raw$valomrade[[total]] <- raw$valomrade[[total]] + 1L
+    expect_error(parse_mandat_2026(raw), paste0(total, ".*st.*mmer inte"))
+  }
+})
+
+test_that("missing historical totals use complete non-empty components", {
+  raw <- mandat_raw_fixture()
+  raw$valomrade$totaltAntalMandatForegaendeVal <- NULL
+  raw$valomrade$mandatfordelning$partiLista[[1]]$antalMandatForegaendeVal <- 3L
+  out <- parse_mandat_2026(raw)
+  expect_identical(unique(out$totalt_antal_mandat_fg), 3L)
+})
+
+test_that("missing historical totals stay unknown with unknown components", {
+  raw <- mandat_raw_fixture()
+  raw$valomrade$totaltAntalMandatForegaendeVal <- NULL
+  raw$valomrade$mandatfordelning$partiLista[[1]]$antalMandatForegaendeVal <- NULL
+  out <- parse_mandat_2026(raw)
+  expect_true(all(is.na(out$totalt_antal_mandat_fg)))
+})
+
+test_that("current and historical council sizes are preserved separately", {
+  raw <- mandat_raw_fixture(valtyp = "KF", kod = "1438")
+  raw$valomrade$totaltAntalMandat <- 2L
+  raw$valomrade$mandatfordelning$partiLista[[1]]$antalMandat <- 2L
+  raw$valomrade$totaltAntalMandatForegaendeVal <- 1L
+  raw$valomrade$mandatfordelning$partiLista[[1]]$antalMandatForegaendeVal <- 1L
+  out <- parse_mandat_2026(raw)
+  expect_identical(unique(out$totalt_antal_mandat), 2L)
+  expect_identical(unique(out$totalt_antal_mandat_fg), 1L)
+})
+
 test_that("elected and person-election availability has three states", {
   absent <- list(valtyp = "RD", rakningstillfalle = "slutlig",
                  valomrade = list(kod = "00"))

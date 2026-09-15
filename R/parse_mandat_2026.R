@@ -52,10 +52,12 @@ parse_mandat_2026 <- function(raw) {
     as.integer(x)
   }
 
-  total_mandat <- function(raw_total, komponenter, namn) {
+  total_mandat <- function(raw_total, komponenter, namn,
+                           kontrollera_summa = TRUE) {
     total <- mandat_heltal(raw_total, namn)
     if (!is.na(total)) {
-      if (length(komponenter) > 0L && !anyNA(komponenter) &&
+      if (kontrollera_summa && length(komponenter) > 0L &&
+          !anyNA(komponenter) &&
           sum(as.double(komponenter)) != total) {
         stop("Mandattotalen `", namn, "` st\u00e4mmer inte med partiernas mandat.",
              call. = FALSE)
@@ -118,16 +120,16 @@ parse_mandat_2026 <- function(raw) {
     )
     totalt_antal_mandat_fg <- total_mandat(
       obj[["totaltAntalMandatForegaendeVal"]], partier$antal_mandat_fg,
-      "totaltAntalMandatForegaendeVal"
+      "totaltAntalMandatForegaendeVal", kontrollera_summa = FALSE
     )
     totalt_antal_fasta_mandat_fg <- total_mandat(
       obj[["totaltAntalFastaMandatForegaendeVal"]], partier$antal_fasta_mandat_fg,
-      "totaltAntalFastaMandatForegaendeVal"
+      "totaltAntalFastaMandatForegaendeVal", kontrollera_summa = FALSE
     )
     totalt_antal_utjamningsmandat_fg <- total_mandat(
       obj[["totaltAntalUtjamningsMandatForegaendeVal"]],
       partier$antal_utjamningsmandat_fg,
-      "totaltAntalUtjamningsMandatForegaendeVal"
+      "totaltAntalUtjamningsMandatForegaendeVal", kontrollera_summa = FALSE
     )
 
     partier |>
