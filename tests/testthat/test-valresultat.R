@@ -29,7 +29,10 @@ test_that("all 48 election-level-count combinations select the decided source", 
       expect_identical(unique(out$rakningstillfalle), rakning)
       expect_identical(names(out), .valresultat_public_columns_2026(nivaer[i]))
       typer <- vapply(.valresultat_schema(), typeof, "")
-      typer <- c(typer, raknat = "logical")
+      typer <- c(
+        typer, kommunnamn_officiellt = "character", raknat = "logical",
+        valomradessparr = "double", valkretssparr = "double"
+      )
       expect_identical(unname(vapply(out, typeof, "")), unname(typer[names(out)]))
     }
   }
@@ -185,7 +188,8 @@ test_that("public district results retain counted and uncounted districts", {
       info = val
     )
 
-    tidigare <- fixture_parse_resultat(val, "valdistrikt", "preliminar", raw)
+    tidigare <- fixture_parse_resultat(val, "valdistrikt", "preliminar", raw) |>
+      .valresultat_public_andelar_2026()
     rapporterat <- dplyr::filter(out, raknat)
     kompletterade <- c(
       "kommunnamn", "lannamn", "valomradesnamn", "valkretskod", "valkretsnamn"
@@ -489,11 +493,98 @@ test_that("every public level has an exact frozen column contract", {
     )
     out <- fixture_public_resultat(val, niva)
     expect_identical(names(out), kolumner, info = niva)
-    typer <- c(vapply(.valresultat_schema(), typeof, ""), raknat = "logical")
+    typer <- c(
+      vapply(.valresultat_schema(), typeof, ""),
+      kommunnamn_officiellt = "character", raknat = "logical",
+      valomradessparr = "double", valkretssparr = "double"
+    )
     expect_identical(
       unname(vapply(out, typeof, "")), unname(typer[kolumner]), info = niva
     )
   }
+})
+
+test_that("public shares use the 0-1 scale for D, U, M and O sources", {
+  lagg_till_andelar <- function(raw, kalla) {
+    hamta <- function() switch(kalla,
+      D = raw$valdistrikt[[1]], U = raw$kommuner[[1]],
+      M = raw$valomrade, O = raw$helaLandet
+    )
+    spara <- function(obj) {
+      if (kalla == "D") raw$valdistrikt[[1]] <<- obj
+      if (kalla == "U") raw$kommuner[[1]] <<- obj
+      if (kalla == "M") raw$valomrade <<- obj
+      if (kalla == "O") raw$helaLandet <<- obj
+    }
+    obj <- hamta()
+    obj$valdeltagande <- 60
+    obj$valdeltagandeVallokal <- 60
+    obj$valdeltagandeForegaendeVal <- 62.5
+    obj$forandringValdeltagande <- -2.5
+    obj$statusJamforelse <- "jamforbar"
+    parti <- obj$rostfordelning$rosterPaverkaMandat$partiRoster[[1]]
+    parti$andelRoster <- 60
+    parti$andelRosterForegaendeVal <- 62.5
+    parti$forandringAndelRoster <- -2.5
+    obj$rostfordelning$rosterPaverkaMandat$partiRoster[[1]] <- parti
+    ogiltiga <- obj$rostfordelning$rosterEjPaverkaMandat
+    ogiltiga$andelRosterAvTotaltAntalRoster <- 16
+    ogiltiga$andelRosterAvTotaltAntalRosterForegaendeVal <- 20
+    ogiltiga$forandringAndelRosterAvTotaltAntalRoster <- -4
+    ogiltiga$rosterEjAnmaltDeltagande$andelRosterAvTotaltAntalRoster <- 0
+    ogiltiga$rosterEjAnmaltDeltagande$
+      andelRosterAvTotaltAntalRosterForegaendeVal <- 0
+    ogiltiga$rosterEjAnmaltDeltagande$
+      forandringAndelRosterAvTotaltAntalRoster <- 0
+    ogiltiga$blankaRoster$andelRosterAvTotaltAntalRoster <- 16
+    ogiltiga$blankaRoster$andelRosterAvTotaltAntalRosterForegaendeVal <- 20
+    ogiltiga$blankaRoster$forandringAndelRosterAvTotaltAntalRoster <- -4
+    ogiltiga$ovrigaOgiltiga$andelRosterAvTotaltAntalRoster <- 0
+    ogiltiga$ovrigaOgiltiga$andelRosterAvTotaltAntalRosterForegaendeVal <- NULL
+    ogiltiga$ovrigaOgiltiga$forandringAndelRosterAvTotaltAntalRoster <- NULL
+    obj$rostfordelning$rosterEjPaverkaMandat <- ogiltiga
+    spara(obj)
+    raw
+  }
+
+  specs <- list(
+    D = c(val = "RD", niva = "valdistrikt"),
+    U = c(val = "RD", niva = "kommun"),
+    M = c(val = "RD", niva = "riket"),
+    O = c(val = "KF", niva = "riket")
+  )
+  for (kalla in names(specs)) {
+    spec <- specs[[kalla]]
+    raw <- lagg_till_andelar(fixture_resultatraw(spec[["val"]], kalla), kalla)
+    internt <- fixture_parse_resultat(spec[["val"]], spec[["niva"]], raw = raw)
+    expect_equal(internt$andel_roster[[1]], 60, info = kalla)
+    out <- fixture_public_resultat(spec[["val"]], spec[["niva"]], raw = raw)
+    rad <- out[out$partikod == "0001", ][1, ]
+    expect_equal(rad$andel_roster, 0.6, info = kalla)
+    expect_equal(rad$andel_roster_fg, 0.625, info = kalla)
+    expect_equal(rad$diff_andel_roster, -0.025, info = kalla)
+    expect_equal(rad$diff_andel_roster,
+                 rad$andel_roster - rad$andel_roster_fg, info = kalla)
+    expect_equal(rad$valdel, 0.6, info = kalla)
+    expect_equal(rad$valdel_fg, 0.625, info = kalla)
+    expect_equal(rad$diff_valdel, -0.025, info = kalla)
+    expect_equal(rad$andel_ogiltiga, 0.16, info = kalla)
+    expect_equal(rad$andel_ogiltiga_fg, 0.20, info = kalla)
+    expect_equal(rad$diff_andel_ogiltiga, -0.04, info = kalla)
+    expect_identical(rad$andel_ej_anmalt_deltagande, 0, info = kalla)
+    expect_identical(rad$diff_andel_ej_anmalt_deltagande, 0, info = kalla)
+    expect_true(is.na(rad$andel_ovriga_ogiltiga_fg), info = kalla)
+    expect_true(is.na(rad$diff_andel_ovriga_ogiltiga), info = kalla)
+  }
+
+  mandat_raw <- lagg_till_andelar(fixture_resultatraw("RD", "M"), "M")
+  mandat_raw$valomrade$valomradessparrProcent <- 4
+  mandat_raw$valomrade$valkretssparrProcent <- 12
+  out <- fixture_public_resultat("RD", "riket", raw = mandat_raw)
+  expect_false(any(c("valomradessparr_procent", "valkretssparr_procent") %in%
+                     names(out)))
+  expect_identical(unique(out$valomradessparr), 0.04)
+  expect_identical(unique(out$valkretssparr), 0.12)
 })
 
 test_that("public reporting metadata exposes only analytically distinct scopes", {
@@ -553,6 +644,15 @@ test_that("public results from different levels can be row-bound", {
   expect_setequal(unique(out$geografiniva), c("valdistrikt", "riket"))
   expect_true("raknat" %in% names(out))
   expect_true(all(is.na(out$raknat[out$geografiniva == "riket"])))
+})
+
+test_that("public result municipality names separate short and official labels", {
+  for (niva in c("valdistrikt", "kommun", "kommunvalkrets")) {
+    out <- fixture_public_resultat("KF", niva)
+    expect_identical(unique(out$kommunkod), "0180", info = niva)
+    expect_identical(unique(out$kommunnamn), "Stockholm", info = niva)
+    expect_identical(unique(out$kommunnamn_officiellt), "Omrade", info = niva)
+  }
 })
 
 test_that("local index and ZIP pipeline never uses the network, including archival", {

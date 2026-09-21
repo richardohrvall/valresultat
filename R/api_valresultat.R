@@ -29,8 +29,11 @@
 #' harmoniseras alla källor till samma 83 kolumner. Det publika resultatet
 #' innehåller en gemensam analyskärna och endast den geografiska identifikation
 #' som är relevant för vald `niva`. Datum, tidsstämplar och geografiska koder
-#' är character, antal integer, andelar double i procent och indikatorer
-#' logical. Saknade eller ej tillämpliga fält är typade `NA`.
+#' är character, antal integer, publika andelar double på 0–1-skalan och
+#' indikatorer logical. Differenser mellan andelar uttrycks på samma skala:
+#' `0.025` betyder en ökning med 2,5 procentenheter och är inte en relativ
+#' procentuell förändring. `valomradessparr` och `valkretssparr` följer samma
+#' 0–1-konvention. Saknade eller ej tillämpliga fält är typade `NA`.
 #' Historik och differenser bevaras endast där källan publicerar dem.
 #'
 #' `antal_valdistrikt_raknade` och `antal_valdistrikt_som_ska_raknas` avser
@@ -52,12 +55,17 @@
 #' deras aktuella röster, andelar och resultatmått är typade `NA`. En
 #' uttrycklig nolla i ett rapporterat resultat behålls som 0. En saknad
 #' `rostfordelning`-nyckel eller en motsägelsefull struktur ger fel.
+#' `kommunnamn` är paketets korta analysnamn, uppslaget exakt via `kommunkod`.
+#' `kommunnamn_officiellt` bevarar Valmyndighetens benämning när källan har
+#' en sådan; den konstrueras aldrig från kortnamnet.
 #'
 #' De geografiska kolumnerna är: valdistrikt — `valdistriktskod`,
-#' `valdistriktsnamn`, `valdistriktstyp`, `kommunkod`, `kommunnamn`, `lankod`,
+#' `valdistriktsnamn`, `valdistriktstyp`, `kommunkod`, `kommunnamn`,
+#' `kommunnamn_officiellt`, `lankod`,
 #' `lannamn`, `valomradeskod`, `valomradesnamn`, `valkretskod`,
 #' `valkretsnamn`, `kommunvalkretskod`, `kommunvalkretsnamn`; kommun —
-#' `lankod`, `lannamn`, `kommunkod`, `kommunnamn`; kommunvalkrets — samma
+#' `lankod`, `lannamn`, `kommunkod`, `kommunnamn`,
+#' `kommunnamn_officiellt`; kommunvalkrets — samma
 #' läns- och kommunidentitet samt `kommunvalkretskod`,
 #' `kommunvalkretsnamn`; län — `lankod`, `lannamn`; region —
 #' `valomradeskod`, `valomradesnamn`; region- och riksdagsvalkrets —

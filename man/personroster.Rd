@@ -41,6 +41,9 @@ orundade proportionen \code{antal_personroster / antal_partiroster} på
 0–1-skalan. \code{kvalificerad_personval} är \code{FALSE} endast när en komplett
 officiell personvalslista saknar kandidaten; annars används \code{NA} för
 saknad eller oklar information.
+För KF är \code{valomradesnamn} ett kort kommunnamn. I en odelad kommun är
+även \code{personvalsomradesnamn} samma kortnamn; i en valkretsindelad kommun
+identifierar det i stället kommunvalkretsen.
 }
 \description{
 Skapar en analysvänlig tabell med personröster för giltiga kandidaturer.

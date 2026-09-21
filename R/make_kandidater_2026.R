@@ -144,10 +144,6 @@ make_kandidater_2026 <- function(kandidaturer) {
       kon = first_non_na(kon),
       alder_pa_valdagen = first_non_na(alder_pa_valdagen),
       folkbokforingskommun = first_non_na(folkbokforingskommun),
-      valomradeskod = unique_or_na(valomradeskod),
-      valomradesnamn = unique_or_na(valomradesnamn),
-      valkretskod = unique_or_na(valkretskod),
-      valkretsnamn = unique_or_na(valkretsnamn),
       antal_valomraden = dplyr::n_distinct(
         valomradeskod,
         na.rm = TRUE
@@ -160,6 +156,10 @@ make_kandidater_2026 <- function(kandidaturer) {
         .lista_id,
         na.rm = TRUE
       ),
+      valomradeskod = unique_or_na(valomradeskod),
+      valomradesnamn = unique_or_na(valomradesnamn),
+      valkretskod = unique_or_na(valkretskod),
+      valkretsnamn = unique_or_na(valkretsnamn),
       .by = c(kandidatnummer, valtyp, partikod)
     ) |>
     dplyr::mutate(
@@ -215,5 +215,5 @@ make_kandidater_2026 <- function(kandidaturer) {
       flera_valtyper
     )
 
-  kandidater
+  .kort_kommunnamn_2026(kandidater)
 }

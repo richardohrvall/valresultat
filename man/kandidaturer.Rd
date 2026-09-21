@@ -35,6 +35,8 @@ valsedel/lista i ett valområde och eventuell valkrets. En kandidat kan
 ha flera rader och ogiltiga kandidaturer bevaras. Identitetsfält omfattar
 valtyp, område, valkrets, parti, listnummer, ordning och kandidatnummer.
 Källans namn bevaras i \code{namn} och \code{giltig} är logical.
+För KF är valområdet kommunen och \code{valomradesnamn} är paketets korta
+kommunnamn, uppslaget exakt via \code{valomradeskod}.
 }
 \description{
 Hämtar kandidaturdata från Valmyndigheten.

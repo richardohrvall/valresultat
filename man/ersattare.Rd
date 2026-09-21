@@ -39,6 +39,8 @@ ersättare inom val, område/valkrets, parti och ersättargrupp.
 \code{ersattarordning} identifierar relationen. Ordning är integer; koder och
 namn är character. Parti- och relationsfält ligger före geografi och
 teknisk valmetadata. Ett känt tomt resultat behåller samma typade schema.
+För KF är \code{valomradesnamn} paketets korta kommunnamn, uppslaget via
+\code{valomradeskod}; separata kommunfält dupliceras inte.
 }
 \description{
 Hämtar relationer mellan valda ledamöter och deras ersättare från

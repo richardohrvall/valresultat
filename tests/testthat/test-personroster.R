@@ -124,14 +124,14 @@ test_that("official personal votes are validated against complete detail and sha
   x <- personrostomrades_fixture(official_votes = 4L)
   expect_error(
     .personrostomraden_2026(x$kandidaturer, x$kandidater, x$rost, x$mandat),
-    "Officiellt personröstetal"
+    "Officiellt personr"
   )
   x <- personrostomrades_fixture()
   x$mandat$valomrade$valkretsLista[[1]]$kvalificeradeForPersonvalLista[[1]]$
     andelPersonroster <- 31
   expect_error(
     .personrostomraden_2026(x$kandidaturer, x$kandidater, x$rost, x$mandat),
-    "personröstandel"
+    "personr"
   )
 })
 
@@ -160,9 +160,11 @@ test_that("undivided areas hide technical constituency codes", {
   out <- .personrostomraden_2026(x$kandidaturer, x$kandidater, x$rost, x$mandat)
   expect_identical(out$geografiniva, "kommun")
   expect_identical(out$personvalsomradeskod, "0114")
-  expect_identical(out$personvalsomradesnamn, "Kommun")
   expect_identical(out$valkretskod, NA_character_)
   expect_identical(out$valkretsnamn, NA_character_)
+  expect_identical(out$valomradesnamn, "Upplands Väsby")
+  expect_identical(out$personvalsomradesnamn, "Upplands Väsby")
+  expect_false(any(c("kommunkod", "kommunnamn", "kommunnamn_officiellt") %in% names(out)))
 })
 
 test_that("RF person vote geography distinguishes divided and undivided areas", {

@@ -112,5 +112,9 @@ add_valda_to_kandidater_2026 <- function(
     ) |>
     dplyr::mutate(
       invald = dplyr::coalesce(invald, FALSE)
+    ) |>
+    .kort_kommunnamn_2026(
+      kodkolumn = "invald_valomradeskod",
+      namnkolumn = "invald_valomradesnamn"
     )
 }

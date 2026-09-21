@@ -9,4 +9,5 @@
 ^\.check$
 ^\.test-tmp$
 ^development$
+^data-raw$
 ^\.r-lib$

@@ -16,6 +16,10 @@ test_that("candidate table preserves its key and excludes invalid candidacies", 
   expect_type(out$kandidatnummer, "character")
   expect_type(out$alder_pa_valdagen, "integer")
   expect_type(out$namn_varierar, "logical")
+  kf <- dplyr::filter(out, valtyp == "KF")
+  expect_identical(kf$valomradeskod, "0180")
+  expect_identical(kf$valomradesnamn, "Stockholm")
+  expect_false(any(c("kommunkod", "kommunnamn", "kommunnamn_officiellt") %in% names(out)))
   anna <- dplyr::filter(out, kandidatnummer == "1", valtyp == "RD", partikod == "A")
   expect_identical(anna$namn, "Anna Andersson")
   expect_true(anna$namn_varierar)
@@ -27,6 +31,17 @@ test_that("candidate table preserves its key and excludes invalid candidacies", 
   reversed <- make_kandidater_2026(fixture_kandidaturer()[6:1, ])
   expect_equal(dplyr::arrange(out, kandidatnummer, valtyp, partikod),
                dplyr::arrange(reversed, kandidatnummer, valtyp, partikod))
+})
+
+test_that("public candidacies complete KF municipality names by code", {
+  local_mocked_bindings(
+    .resolve_val_file = function(...) "fixture.csv",
+    read_kandidaturer_2026 = function(...) fixture_kandidaturer()
+  )
+  out <- kandidaturer(val = "KF")
+  expect_identical(out$valomradeskod, "0180")
+  expect_identical(out$valomradesnamn, "Stockholm")
+  expect_false(any(c("kommunkod", "kommunnamn", "kommunnamn_officiellt") %in% names(out)))
 })
 
 test_that("name normalisation preserves spelling and aliases", {

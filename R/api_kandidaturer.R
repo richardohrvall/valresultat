@@ -17,6 +17,8 @@
 #'   ha flera rader och ogiltiga kandidaturer bevaras. Identitetsfält omfattar
 #'   valtyp, område, valkrets, parti, listnummer, ordning och kandidatnummer.
 #'   Källans namn bevaras i `namn` och `giltig` är logical.
+#'   För KF är valområdet kommunen och `valomradesnamn` är paketets korta
+#'   kommunnamn, uppslaget exakt via `valomradeskod`.
 #' @examples
 #' \dontrun{kandidaturer(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 #' @seealso [kandidater()], [valresultat-package]
@@ -49,7 +51,7 @@ kandidaturer <- function(
       dplyr::filter(valtyp %in% val)
   }
 
-  out
+  .kort_kommunnamn_2026(out)
 }
 
 

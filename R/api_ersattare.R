@@ -20,6 +20,8 @@
 #'   `ersattarordning` identifierar relationen. Ordning är integer; koder och
 #'   namn är character. Parti- och relationsfält ligger före geografi och
 #'   teknisk valmetadata. Ett känt tomt resultat behåller samma typade schema.
+#'   För KF är `valomradesnamn` paketets korta kommunnamn, uppslaget via
+#'   `valomradeskod`; separata kommunfält dupliceras inte.
 #' @examples
 #' \dontrun{ersattare(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 #' @seealso [valda()], [mandat()], [valresultat-package]
@@ -79,6 +81,7 @@ ersattare <- function(
 
   parsed |>
     purrr::list_rbind() |>
+    .kort_kommunnamn_2026() |>
     dplyr::select(dplyr::all_of(c(
       "valtillfalle",
       "valtyp",

@@ -61,6 +61,8 @@ test_that("mandat accepts a valid level selected from val NULL", {
   out <- mandat(val = NULL, niva = "kommun", progress = FALSE)
   expect_identical(unique(out$valtyp), "KF")
   expect_identical(unique(out$geografiniva), "kommun")
+  expect_identical(unique(out$valomradeskod), "0180")
+  expect_identical(unique(out$valomradesnamn), "Stockholm")
   key <- c("valtillfalle", "valtyp", "rakningstillfalle", "geografiniva",
            "valomradeskod", "valkretskod", "partikod")
   expect_false(anyDuplicated(out[key]) > 0L)
@@ -85,6 +87,20 @@ test_that("mandat accepts live preliminary counting metadata", {
     val = "RD", niva = "riket", rakning = "preliminar", progress = FALSE
   )
   expect_identical(unique(out$rakningstillfalle), "preliminar")
+})
+
+test_that("public mandate thresholds are proportions with clear names", {
+  raw <- mandat_raw_fixture("RD", "00")
+  raw$valomrade$valomradessparrProcent <- 4
+  raw$valomrade$valkretssparrProcent <- 12
+  internt <- parse_mandat_2026(raw)
+  expect_identical(unique(internt$valomradessparr_procent), 4)
+  expect_identical(unique(internt$valkretssparr_procent), 12)
+  publikt <- .mandat_public_2026(internt)
+  expect_false(any(c("valomradessparr_procent", "valkretssparr_procent") %in%
+                     names(publikt)))
+  expect_identical(unique(publikt$valomradessparr), 0.04)
+  expect_identical(unique(publikt$valkretssparr), 0.12)
 })
 
 test_that("mandate totals never turn incomplete components into partial sums", {
@@ -227,13 +243,14 @@ test_that("ersattare has a stable public relationship schema and key", {
   expect_false(anyDuplicated(out[key]) > 0L)
   expect_type(out$ersattarordning, "integer")
   expect_false(any(vapply(out, is.list, logical(1))))
+  expect_false(any(c("kommunkod", "kommunnamn", "kommunnamn_officiellt") %in% names(out)))
   expect_identical(names(out), c(
     "valtillfalle", "valtyp", "partikod", "partiforkortning",
     "partibeteckning", "partifarg", "ledamot_kandidatnummer",
     "ledamot_namn", "ersattare_kandidatnummer", "ersattare_namn",
     "ersattarordning", "ersattargrupp", "valgrund_id", "valgrund_text",
-    "geografiniva", "valomradeskod", "valomradesnamn", "valkretskod",
-    "valkretsnamn", "valklass", "rakningstillfalle", "valdatum",
+    "geografiniva", "valomradeskod", "valomradesnamn", "valkretskod", "valkretsnamn",
+    "valklass", "rakningstillfalle", "valdatum",
     "valdatum_fg", "test"
   ))
 })

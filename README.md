@@ -132,6 +132,17 @@ The package uses official results at the requested geographic level when those
 results are provided by Valmyndigheten rather than automatically reconstructing
 them from lower-level data.
 
+All public vote shares, turnout rates and mandate thresholds are unrounded
+proportions on the 0–1 scale. Differences between shares use the same scale and
+are absolute differences, not relative percentage changes. For example,
+`diff_andel_roster = 0.025` means an increase of 2.5 percentage points.
+
+In `valresultat()`, `kommunnamn` is a short analysis name looked up by
+`kommunkod`, while `kommunnamn_officiellt` preserves Valmyndigheten's source
+label. Candidate-related and other tables that already identify KF geography
+through `valomradeskod` use the same short name directly in
+`valomradesnamn`, without duplicate municipality columns.
+
 ## Candidates and candidacies
 
 `kandidaturer()` preserves detailed source information about individual candidacies. A person may appear several times because the same candidate can stand in several electoral areas, constituencies or lists.

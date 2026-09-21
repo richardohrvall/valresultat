@@ -24,7 +24,18 @@
 }
 
 .mandat_public_schema_2026 <- function() {
-  dplyr::mutate(.mandat_schema_2026(), antal_tomma_stolar = integer())
+  .mandat_public_2026(
+    dplyr::mutate(.mandat_schema_2026(), antal_tomma_stolar = integer())
+  )
+}
+
+.mandat_public_2026 <- function(data) {
+  data <- .publika_andelar_0_1_2026(
+    data, c("valomradessparr_procent", "valkretssparr_procent")
+  )
+  names(data)[names(data) == "valomradessparr_procent"] <- "valomradessparr"
+  names(data)[names(data) == "valkretssparr_procent"] <- "valkretssparr"
+  data
 }
 
 #' Mandat
@@ -48,6 +59,9 @@
 #'   ska inte summeras tillsammans. Saknade totalsummor är `NA` när någon
 #'   mandatkomponent är okänd. `antal_tomma_stolar` är `NA` utan verifierat
 #'   underlag och explicit noll bevaras.
+#'   `valomradessparr` och `valkretssparr` är proportioner på 0–1-skalan.
+#'   För KF är `valomradesnamn` paketets korta kommunnamn, uppslaget via
+#'   `valomradeskod`; separata kommunfält dupliceras inte.
 #' @examples
 #' \dontrun{mandat(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 #' @seealso [valda()], [ersattare()], [valresultat-package]
@@ -171,7 +185,12 @@ mandat <- function(
     purrr::list_rbind() |>
     dplyr::inner_join(par, by = dplyr::join_by(valtyp, geografiniva))
 
-  parsed <- dplyr::bind_rows(.mandat_public_schema_2026(), parsed)
+  parsed <- dplyr::bind_rows(
+    dplyr::mutate(.mandat_schema_2026(), antal_tomma_stolar = integer()),
+    parsed
+  )
+  parsed <- .kort_kommunnamn_2026(parsed)
+  parsed <- .mandat_public_2026(parsed)
   nyckel <- c("valtillfalle", "valtyp", "rakningstillfalle", "geografiniva",
               "valomradeskod", "valkretskod", "partikod")
   obligatoriska <- setdiff(nyckel, "valkretskod")

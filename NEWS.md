@@ -1,5 +1,14 @@
 # valresultat (development)
 
+* Standardizes all public vote shares, turnout rates, share differences and
+  mandate thresholds as proportions on the 0–1 scale. A difference of `0.025`
+  means an increase of 2.5 percentage points, not a relative 2.5 percent
+  change. Public threshold columns are now `valomradessparr` and
+  `valkretssparr`.
+* Adds authoritative short municipality names by municipality code. Election
+  results preserve a separate official municipality label, while tables that
+  already identify KF municipalities as electoral areas use the short name in
+  `valomradesnamn` without duplicate geography columns.
 * Adds `personroster()` with one row per candidate, party and official
   personal-vote area. Official qualified-candidate totals take precedence,
   other totals require verified complete district material, and personal-vote

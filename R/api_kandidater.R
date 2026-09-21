@@ -41,6 +41,12 @@
 #'   ett okänt område ger `NA`. Antalsfält är integer och indikatorer logical.
 #'   Kandidatidentitet och parti följs av personröst-, personvals- och
 #'   invaldsfält; tekniska kandidatursammanfattningar ligger sist.
+#'   För KF är `valomradesnamn` paketets korta kommunnamn när kandidaten har
+#'   ett entydigt valområde. Vid flera valområden är både `valomradeskod` och
+#'   `valomradesnamn` `NA`, medan `antal_valomraden` och `flera_valomraden`
+#'   visar varför. `invald_valomradeskod` och `invald_valomradesnamn` beskriver
+#'   det faktiska invaldsområdet oberoende av kandidaturernas antal; även där
+#'   används kort kommunnamn för KF. `folkbokforingskommun` ändras inte.
 #' @examples
 #' \dontrun{kandidater(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 #' @seealso [kandidaturer()], [valda()], [valresultat-package]

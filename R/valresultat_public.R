@@ -20,13 +20,17 @@
   switch(niva,
     valdistrikt = c(
       "valdistriktskod", "valdistriktsnamn", "valdistriktstyp",
-      "kommunkod", "kommunnamn", "lankod", "lannamn",
+      "kommunkod", "kommunnamn", "kommunnamn_officiellt", "lankod", "lannamn",
       "valomradeskod", "valomradesnamn", "valkretskod", "valkretsnamn",
       "kommunvalkretskod", "kommunvalkretsnamn"
     ),
-    kommun = c("lankod", "lannamn", "kommunkod", "kommunnamn"),
+    kommun = c(
+      "lankod", "lannamn", "kommunkod", "kommunnamn",
+      "kommunnamn_officiellt"
+    ),
     kommunvalkrets = c(
       "lankod", "lannamn", "kommunkod", "kommunnamn",
+      "kommunnamn_officiellt",
       "kommunvalkretskod", "kommunvalkretsnamn"
     ),
     lan = c("lankod", "lannamn"),
@@ -87,12 +91,12 @@
     "ordningsnummer", "ovriga_partier", "over_sparr"
   )
   sparr <- switch(niva,
-    riket = c("valomradessparr_procent", "valkretssparr_procent"),
-    riksdagsvalkrets = c("valomradessparr_procent", "valkretssparr_procent"),
-    region = "valomradessparr_procent",
-    regionvalkrets = "valomradessparr_procent",
-    kommun = "valomradessparr_procent",
-    kommunvalkrets = "valomradessparr_procent",
+    riket = c("valomradessparr", "valkretssparr"),
+    riksdagsvalkrets = c("valomradessparr", "valkretssparr"),
+    region = "valomradessparr",
+    regionvalkrets = "valomradessparr",
+    kommun = "valomradessparr",
+    kommunvalkrets = "valomradessparr",
     character()
   )
   resultat <- names(.valresultat_schema())[41:83]
@@ -100,6 +104,31 @@
     metadata, .valresultat_public_geo_2026(niva),
     omradesstatus, filstatus, parti, sparr, resultat
   )
+}
+
+.publika_andelar_0_1_2026 <- function(data, columns) {
+  for (column in intersect(columns, names(data))) {
+    data[[column]] <- data[[column]] / 100
+  }
+  data
+}
+
+.valresultat_public_andelar_2026 <- function(data) {
+  andelar <- c(
+    "andel_roster", "andel_roster_fg", "diff_andel_roster",
+    "valdel", "valdel_fg", "diff_valdel",
+    "andel_ogiltiga", "andel_ogiltiga_fg", "diff_andel_ogiltiga",
+    "andel_ej_anmalt_deltagande", "andel_ej_anmalt_deltagande_fg",
+    "diff_andel_ej_anmalt_deltagande",
+    "andel_blanka", "andel_blanka_fg", "diff_andel_blanka",
+    "andel_ovriga_ogiltiga", "andel_ovriga_ogiltiga_fg",
+    "diff_andel_ovriga_ogiltiga",
+    "valomradessparr_procent", "valkretssparr_procent"
+  )
+  data <- .publika_andelar_0_1_2026(data, andelar)
+  names(data)[names(data) == "valomradessparr_procent"] <- "valomradessparr"
+  names(data)[names(data) == "valkretssparr_procent"] <- "valkretssparr"
+  data
 }
 
 .valresultat_id_2026 <- function(data, columns) {
@@ -321,6 +350,8 @@
     saknas <- is.na(data$lannamn) | !nzchar(data$lannamn)
     data$lannamn[saknas] <- .valresultat_lannamn_2026(data$lankod[saknas])
   }
+  data <- .komplettera_kommunnamn_2026(data, data$kommunnamn)
+  data <- .valresultat_public_andelar_2026(data)
   columns <- .valresultat_public_columns_2026(niva)
   data[columns]
 }

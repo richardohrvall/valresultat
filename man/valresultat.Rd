@@ -65,8 +65,11 @@ upprepas på partiraderna och ska inte summeras över partier. Internt
 harmoniseras alla källor till samma 83 kolumner. Det publika resultatet
 innehåller en gemensam analyskärna och endast den geografiska identifikation
 som är relevant för vald \code{niva}. Datum, tidsstämplar och geografiska koder
-är character, antal integer, andelar double i procent och indikatorer
-logical. Saknade eller ej tillämpliga fält är typade \code{NA}.
+är character, antal integer, publika andelar double på 0–1-skalan och
+indikatorer logical. Differenser mellan andelar uttrycks på samma skala:
+\code{0.025} betyder en ökning med 2,5 procentenheter och är inte en relativ
+procentuell förändring. \code{valomradessparr} och \code{valkretssparr} följer samma
+0–1-konvention. Saknade eller ej tillämpliga fält är typade \code{NA}.
 Historik och differenser bevaras endast där källan publicerar dem.
 
 \code{antal_valdistrikt_raknade} och \code{antal_valdistrikt_som_ska_raknas} avser
@@ -88,12 +91,17 @@ officiella partiuniversumet från mandatfilens röstfördelning i samma ZIP;
 deras aktuella röster, andelar och resultatmått är typade \code{NA}. En
 uttrycklig nolla i ett rapporterat resultat behålls som 0. En saknad
 \code{rostfordelning}-nyckel eller en motsägelsefull struktur ger fel.
+\code{kommunnamn} är paketets korta analysnamn, uppslaget exakt via \code{kommunkod}.
+\code{kommunnamn_officiellt} bevarar Valmyndighetens benämning när källan har
+en sådan; den konstrueras aldrig från kortnamnet.
 
 De geografiska kolumnerna är: valdistrikt — \code{valdistriktskod},
-\code{valdistriktsnamn}, \code{valdistriktstyp}, \code{kommunkod}, \code{kommunnamn}, \code{lankod},
+\code{valdistriktsnamn}, \code{valdistriktstyp}, \code{kommunkod}, \code{kommunnamn},
+\code{kommunnamn_officiellt}, \code{lankod},
 \code{lannamn}, \code{valomradeskod}, \code{valomradesnamn}, \code{valkretskod},
 \code{valkretsnamn}, \code{kommunvalkretskod}, \code{kommunvalkretsnamn}; kommun —
-\code{lankod}, \code{lannamn}, \code{kommunkod}, \code{kommunnamn}; kommunvalkrets — samma
+\code{lankod}, \code{lannamn}, \code{kommunkod}, \code{kommunnamn},
+\code{kommunnamn_officiellt}; kommunvalkrets — samma
 läns- och kommunidentitet samt \code{kommunvalkretskod},
 \code{kommunvalkretsnamn}; län — \code{lankod}, \code{lannamn}; region —
 \code{valomradeskod}, \code{valomradesnamn}; region- och riksdagsvalkrets —

@@ -443,7 +443,7 @@
     )
   }
 
-  out |>
+  out <- out |>
     dplyr::mutate(
       antal_personroster = dplyr::case_when(
         .officiell_rad %in% TRUE ~ antal_personroster_officiellt,
@@ -480,6 +480,13 @@
     dplyr::arrange(
       valtyp, valomradeskod, personvalsomradeskod, partikod, kandidatnummer
     )
+  out <- .kort_kommunnamn_2026(out)
+  .kort_kommunnamn_2026(
+    out,
+    kodkolumn = "personvalsomradeskod",
+    namnkolumn = "personvalsomradesnamn",
+    rader = out$geografiniva == "kommun"
+  )
 }
 
 .personrosttotaler_fran_omraden_2026 <- function(personroster) {

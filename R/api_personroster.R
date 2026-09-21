@@ -32,6 +32,9 @@
 #'   0–1-skalan. `kvalificerad_personval` är `FALSE` endast när en komplett
 #'   officiell personvalslista saknar kandidaten; annars används `NA` för
 #'   saknad eller oklar information.
+#'   För KF är `valomradesnamn` ett kort kommunnamn. I en odelad kommun är
+#'   även `personvalsomradesnamn` samma kortnamn; i en valkretsindelad kommun
+#'   identifierar det i stället kommunvalkretsen.
 #' @examples
 #' \dontrun{
 #' personroster(val = "RD", source = "local", data_dir = "mitt_arkiv")

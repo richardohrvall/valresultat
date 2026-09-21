@@ -79,6 +79,8 @@ utils::globalVariables(c(
   "invalsordning",
   "kandidatnummer",
   "kommunkod",
+  "kommunnamn",
+  "kommunnamn_officiellt",
   "kommunvalkretskod",
   "kommunvalkretsnamn",
   "kon",

@@ -49,6 +49,12 @@ Totalen är 0 endast när samtliga relevanta områden är verifierade nollor;
 ett okänt område ger \code{NA}. Antalsfält är integer och indikatorer logical.
 Kandidatidentitet och parti följs av personröst-, personvals- och
 invaldsfält; tekniska kandidatursammanfattningar ligger sist.
+För KF är \code{valomradesnamn} paketets korta kommunnamn när kandidaten har
+ett entydigt valområde. Vid flera valområden är både \code{valomradeskod} och
+\code{valomradesnamn} \code{NA}, medan \code{antal_valomraden} och \code{flera_valomraden}
+visar varför. \code{invald_valomradeskod} och \code{invald_valomradesnamn} beskriver
+det faktiska invaldsområdet oberoende av kandidaturernas antal; även där
+används kort kommunnamn för KF. \code{folkbokforingskommun} ändras inte.
 }
 \description{
 Skapar en analysvänlig kandidatfil.

@@ -44,6 +44,9 @@ område samt parti. Områdestotaler upprepas på partirader och nivåerna
 ska inte summeras tillsammans. Saknade totalsummor är \code{NA} när någon
 mandatkomponent är okänd. \code{antal_tomma_stolar} är \code{NA} utan verifierat
 underlag och explicit noll bevaras.
+\code{valomradessparr} och \code{valkretssparr} är proportioner på 0–1-skalan.
+För KF är \code{valomradesnamn} paketets korta kommunnamn, uppslaget via
+\code{valomradeskod}; separata kommunfält dupliceras inte.
 }
 \description{
 Hämtar mandatfördelningen.

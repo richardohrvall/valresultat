@@ -454,5 +454,9 @@
         "ersattargrupp"
       )),
       .after = dplyr::any_of("namn")
+    ) |>
+    .kort_kommunnamn_2026(
+      kodkolumn = "invald_valomradeskod",
+      namnkolumn = "invald_valomradesnamn"
     )
 }

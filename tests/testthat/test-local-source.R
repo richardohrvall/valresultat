@@ -50,7 +50,10 @@ test_that("candidate CSV and result index use local archival", {
   dir.create(file.path(root, "2026", "val2026", "parti"), recursive = TRUE)
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
   writeLines("synthetic candidacies", val_local_path("parti/kandidaturer.csv", 2026, "val2026", root))
-  expect_equal(kandidaturer(source = "local", data_dir = root, archive = TRUE), fixture_kandidaturer())
+  expect_equal(
+    kandidaturer(source = "local", data_dir = root, archive = TRUE),
+    .kort_kommunnamn_2026(fixture_kandidaturer())
+  )
   expect_true(file.exists(val_archive_path("parti/kandidaturer.csv", 2026, "val2026", root)))
 
   old <- options(valresultat.resultatsamling_2026 = "test")
