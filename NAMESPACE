@@ -4,6 +4,7 @@ export(ersattare)
 export(kandidater)
 export(kandidaturer)
 export(mandat)
+export(personroster)
 export(valda)
 export(valresultat)
 importFrom(utils,

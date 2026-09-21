@@ -43,9 +43,10 @@ byggd från giltiga kandidaturer. Namn normaliseras deterministiskt och
 Med \code{resultat = TRUE} tillkommer resultatkolumner. \code{invald} och
 \code{kvalificerad_personval} är \code{NA} när relevant information saknas,
 och \code{FALSE} när informationen finns men kandidaten inte uppfyller villkoret.
-Samma regel gäller \code{invald}. \code{antal_personroster_totalt} är 0 endast när
-komplett underlag saknar en rad för kandidaten; partiellt eller oklart
-underlag ger \code{NA}. Antalsfält är integer och indikatorer logical.
+Samma regel gäller \code{invald}. \code{antal_personroster_totalt} summerar de
+områdesspecifika värden som även ligger till grund för \code{\link[=personroster]{personroster()}}.
+Totalen är 0 endast när samtliga relevanta områden är verifierade nollor;
+ett okänt område ger \code{NA}. Antalsfält är integer och indikatorer logical.
 Kandidatidentitet och parti följs av personröst-, personvals- och
 invaldsfält; tekniska kandidatursammanfattningar ligger sist.
 }
@@ -57,11 +58,13 @@ En rad motsvarar kandidatnummer × valtyp × parti. Kandidater som
 ställer upp på flera politiska nivåer eller för flera partier kan därför
 förekomma på flera rader.
 
-\code{antal_personroster_totalt} är känt endast när personröstunderlaget är
-verifierat komplett för partiet i alla valområden från kandidatens giltiga
-kandidaturer. Saknas kandidaten i ett sådant komplett underlag blir totalen
-0. Saknat, partiellt eller motsägelsefullt underlag ger \code{NA}, även om vissa
-personröster har rapporterats. Personvalskvalificering bedöms separat.
+\code{antal_personroster_totalt} är känt endast när varje relevant
+personvalsområde från kandidatens giltiga kandidaturer har ett känt värde.
+Ett officiellt personröstetal i en komplett personvalslista används i första
+hand. I övrigt krävs verifierat komplett distriktsunderlag för partiet.
+Saknas kandidaten i ett sådant komplett underlag blir områdesvärdet 0.
+Saknat, partiellt eller motsägelsefullt underlag i något annat relevant
+område gör totalen \code{NA}. Personvalskvalificering bedöms separat.
 En saknad summeringsnod räknas som verifierad noll endast när varje relevant
 lista uttryckligen har noll personröster och en tom personröstarray.
 }

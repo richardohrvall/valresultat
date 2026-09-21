@@ -6,11 +6,13 @@
 #' ställer upp på flera politiska nivåer eller för flera partier kan därför
 #' förekomma på flera rader.
 #'
-#' `antal_personroster_totalt` är känt endast när personröstunderlaget är
-#' verifierat komplett för partiet i alla valområden från kandidatens giltiga
-#' kandidaturer. Saknas kandidaten i ett sådant komplett underlag blir totalen
-#' 0. Saknat, partiellt eller motsägelsefullt underlag ger `NA`, även om vissa
-#' personröster har rapporterats. Personvalskvalificering bedöms separat.
+#' `antal_personroster_totalt` är känt endast när varje relevant
+#' personvalsområde från kandidatens giltiga kandidaturer har ett känt värde.
+#' Ett officiellt personröstetal i en komplett personvalslista används i första
+#' hand. I övrigt krävs verifierat komplett distriktsunderlag för partiet.
+#' Saknas kandidaten i ett sådant komplett underlag blir områdesvärdet 0.
+#' Saknat, partiellt eller motsägelsefullt underlag i något annat relevant
+#' område gör totalen `NA`. Personvalskvalificering bedöms separat.
 #' En saknad summeringsnod räknas som verifierad noll endast när varje relevant
 #' lista uttryckligen har noll personröster och en tom personröstarray.
 #'
@@ -33,9 +35,10 @@
 #'   Med `resultat = TRUE` tillkommer resultatkolumner. `invald` och
 #'   `kvalificerad_personval` är `NA` när relevant information saknas,
 #'   och `FALSE` när informationen finns men kandidaten inte uppfyller villkoret.
-#'   Samma regel gäller `invald`. `antal_personroster_totalt` är 0 endast när
-#'   komplett underlag saknar en rad för kandidaten; partiellt eller oklart
-#'   underlag ger `NA`. Antalsfält är integer och indikatorer logical.
+#'   Samma regel gäller `invald`. `antal_personroster_totalt` summerar de
+#'   områdesspecifika värden som även ligger till grund för [personroster()].
+#'   Totalen är 0 endast när samtliga relevanta områden är verifierade nollor;
+#'   ett okänt område ger `NA`. Antalsfält är integer och indikatorer logical.
 #'   Kandidatidentitet och parti följs av personröst-, personvals- och
 #'   invaldsfält; tekniska kandidatursammanfattningar ligger sist.
 #' @examples

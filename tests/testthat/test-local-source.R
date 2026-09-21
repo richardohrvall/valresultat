@@ -4,7 +4,7 @@ test_that("local update is rejected before any file or remote access", {
     val_file = unexpected, download_val_file = unexpected,
     val_remote_url = unexpected, archive_val_file = unexpected
   )
-  for (fun in list(kandidaturer, kandidater, valda, mandat, ersattare)) {
+  for (fun in list(kandidaturer, kandidater, personroster, valda, mandat, ersattare)) {
     for (archive in c(FALSE, TRUE)) {
       expect_error(fun(source = "local", update = TRUE, archive = archive),
                    'source = "local".*update = TRUE')

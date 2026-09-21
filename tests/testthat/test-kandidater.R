@@ -64,6 +64,10 @@ test_that("candidate result pipeline respects availability without network acces
                                      valomradeskod = "00", antal_personroster = 7L),
         personroster_status = tibble::tibble(valtyp = "RD", valomradeskod = "00", partikod = "A",
                                             personroster_available = available),
+        personrostomraden = tibble::tibble(
+          kandidatnummer = c("1", "2"), valtyp = "RD", partikod = "A",
+          antal_personroster = if (available) c(7L, 0L) else c(NA_integer_, NA_integer_)
+        ),
         personval = fixture_personval(available),
         valda = if (available) fixture_valda() else fixture_valda()[0, ]
       )
@@ -119,6 +123,10 @@ test_that("positive candidate status survives partial data without inventing neg
                                     valomradeskod = "00", antal_personroster = 7L),
       personroster_status = tibble::tibble(valtyp = "RD", valomradeskod = "00", partikod = "A",
                                            personroster_available = NA),
+      personrostomraden = tibble::tibble(
+        kandidatnummer = c("1", "2"), valtyp = "RD", partikod = "A",
+        antal_personroster = c(NA_integer_, NA_integer_)
+      ),
       personval = attr_value, valda = fixture_valda()
     )
   )

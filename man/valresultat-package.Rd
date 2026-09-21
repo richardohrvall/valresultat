@@ -5,8 +5,9 @@
 \alias{valresultat-package}
 \title{Svenska valdata från Valmyndigheten}
 \description{
-Läs harmoniserade valresultat, kandidaturer, kandidater, mandat och
-ersättarrelationer för valet 2026 med bland annat \code{\link[=valresultat]{valresultat()}}.
+Läs harmoniserade valresultat, kandidaturer, kandidater, personröster,
+mandat och ersättarrelationer för valet 2026 med bland annat
+\code{\link[=valresultat]{valresultat()}} och \code{\link[=personroster]{personroster()}}.
 Resultatfiler väljs via \code{index.md5}. Optionen
 \code{valresultat.resultatsamling_2026} väljer resultatsamling och har för närvarande
 standardvärdet \code{"val2026"}. Test-/utvecklingssamlingen \code{"genrep2026"} kan

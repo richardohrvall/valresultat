@@ -40,6 +40,7 @@ library(valresultat)
 | `mandat()` | Mandate allocation by party |
 | `kandidaturer()` | Detailed candidacy data across electoral areas, constituencies and lists |
 | `kandidater()` | Analysis-ready candidate data |
+| `personroster()` | Personal votes by candidate, party and personal-vote area |
 | `valda()` | Elected candidates; a convenience view based on `kandidater()` |
 | `ersattare()` | Substitute relationships for elected representatives |
 
@@ -70,6 +71,9 @@ mandat(val = "RD")
 
 # Candidates
 kandidater(val = "RD")
+
+# Personal votes by parliamentary constituency
+personroster(val = "RD")
 
 # Elected candidates
 valda(val = "RD")
@@ -146,6 +150,14 @@ valda(val = "KF")
 ```
 
 Candidate-result information is included when the corresponding final result data are available.
+
+`personroster()` returns one row per candidate, party and actual personal-vote
+area. Its `andel_personroster` is an unrounded proportion on the 0–1 scale.
+Verified absence in complete source data is 0, while missing, partial or unclear
+personal-vote material is represented by `NA`. The final RD 2026 source has
+been checked against current live data. RF and KF currently have structural
+fixture and rehearsal coverage and require renewed integration checks against
+their final live files.
 
 ## Data access
 

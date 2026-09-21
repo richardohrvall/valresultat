@@ -24,7 +24,7 @@ mandat_raw_fixture <- function(valtyp = "RD", kod = "00") {
 test_that("all public functions use the same basic argument validation", {
   no_io <- function(...) stop("Unexpected IO")
   local_mocked_bindings(.read_resultatindex_2026 = no_io, val_file = no_io)
-  funs <- list(valresultat, mandat, kandidaturer, kandidater, valda, ersattare)
+  funs <- list(valresultat, mandat, kandidaturer, kandidater, personroster, valda, ersattare)
   for (fun in funs) {
     expect_error(fun(ar = "2026"), "2026")
     expect_error(fun(ar = 2026.5), "2026")
@@ -33,7 +33,7 @@ test_that("all public functions use the same basic argument validation", {
     expect_error(fun(archive = 0), "archive")
     expect_error(fun(data_dir = c("a", "b")), "data_dir")
   }
-  for (fun in list(valresultat, mandat, kandidater, valda, ersattare)) {
+  for (fun in list(valresultat, mandat, kandidater, personroster, valda, ersattare)) {
     expect_error(fun(progress = NA), "progress")
   }
   expect_error(kandidater(resultat = NA), "resultat")
@@ -240,7 +240,8 @@ test_that("ersattare has a stable public relationship schema and key", {
 
 test_that("the intended public namespace is fixed", {
   expect_setequal(getNamespaceExports("valresultat"),
-                  c("valresultat", "mandat", "kandidaturer", "kandidater", "valda", "ersattare"))
+                  c("valresultat", "mandat", "kandidaturer", "kandidater",
+                    "personroster", "valda", "ersattare"))
 })
 
 test_that("candidacy parser preserves its public source-row schema", {

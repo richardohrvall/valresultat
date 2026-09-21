@@ -3,7 +3,7 @@ test_that("public functions reject invalid arguments before reading files", {
     .read_resultatindex_2026 = function(...) stop("Unexpected file access"),
     val_file = function(...) stop("Unexpected file access")
   )
-  for (fun in list(kandidaturer, kandidater, valda, mandat, ersattare)) {
+  for (fun in list(kandidaturer, kandidater, personroster, valda, mandat, ersattare)) {
     expect_error(fun(ar = 2022), "2026")
     expect_error(fun(val = "EU"), "valtyp")
     expect_error(fun(source = "invalid"), "arg")

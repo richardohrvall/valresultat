@@ -134,6 +134,8 @@
 .parse_kandidatresultat_fil_2026 <- function(
     path,
     valtyp,
+    kandidaturer,
+    kandidater,
     source = c("auto", "local", "remote"),
     data_dir = NULL,
     update = FALSE,
@@ -166,7 +168,12 @@
   valomradeskod <- as_chr_na(mandat_raw$valomrade$kod)
   valomradesnamn <- as_chr_na(mandat_raw$valomrade$namn)
 
-  personunderlag <- .personrostunderlag_2026(rost_raw, valomradeskod)
+  personrostomraden <- .personrostomraden_2026(
+    kandidaturer = kandidaturer,
+    kandidater = kandidater,
+    rost_raw = rost_raw,
+    mandat_raw = mandat_raw
+  )
 
   list(
     status = tibble::tibble(
@@ -176,10 +183,48 @@
       valda_available = .valda_available_2026(mandat_raw),
       personval_available = attr(personval, "personval_available", exact = TRUE)
     ),
-    personroster = personunderlag$roster,
-    personroster_status = personunderlag$status,
+    personrostomraden = personrostomraden,
     personval = personval,
     valda = valda_data$valda
+  )
+}
+
+
+.las_kandidatresultat_filer_2026 <- function(
+    kandidaturer,
+    kandidater,
+    val,
+    source = c("auto", "local", "remote"),
+    data_dir = NULL,
+    update = FALSE,
+    archive = FALSE,
+    progress = interactive()
+) {
+  source <- match.arg(source)
+  index <- .read_resultatindex_2026(
+    source = source,
+    data_dir = data_dir,
+    update = update,
+    archive = archive
+  )
+  paths <- .resultat_paths_2026(index = index, val = val)
+  if (nrow(paths) == 0) {
+    stop("Hittade inga slutliga resultatfiler f\u00f6r vald valtyp.", call. = FALSE)
+  }
+  purrr::map2(
+    paths$path,
+    paths$valtyp,
+    \(path, valtyp) .parse_kandidatresultat_fil_2026(
+      path = path,
+      valtyp = valtyp,
+      kandidaturer = kandidaturer,
+      kandidater = kandidater,
+      source = source,
+      data_dir = data_dir,
+      update = update,
+      archive = archive
+    ),
+    .progress = progress
   )
 }
 
@@ -197,49 +242,27 @@
 
   source <- match.arg(source)
 
-  index <- .read_resultatindex_2026(
+  parsed <- .las_kandidatresultat_filer_2026(
+    kandidaturer = kandidaturer,
+    kandidater = kandidater,
+    val = val,
     source = source,
     data_dir = data_dir,
     update = update,
-    archive = archive
-  )
-
-  paths <- .resultat_paths_2026(
-    index = index,
-    val = val
-  )
-
-  if (nrow(paths) == 0) {
-    stop(
-      "Hittade inga slutliga resultatfiler f\u00f6r vald valtyp.",
-      call. = FALSE
-    )
-  }
-
-  parsed <- purrr::map2(
-    paths$path,
-    paths$valtyp,
-    \(path, valtyp) {
-      .parse_kandidatresultat_fil_2026(
-        path = path,
-        valtyp = valtyp,
-        source = source,
-        data_dir = data_dir,
-        update = update,
-        archive = archive
-      )
-    },
-    .progress = progress
+    archive = archive,
+    progress = progress
   )
 
   status <- parsed |>
     purrr::map("status") |>
     purrr::list_rbind()
 
-  personroster <- .personrosttotaler_2026(
-    dplyr::filter(kandidaturer, valtyp %in% val),
-    purrr::list_rbind(purrr::map(parsed, "personroster_status")),
-    purrr::list_rbind(purrr::map(parsed, "personroster"))
+  personrostomraden <- parsed |>
+    purrr::map("personrostomraden") |>
+    purrr::list_rbind()
+
+  personroster <- .personrosttotaler_fran_omraden_2026(
+    personrostomraden
   )
 
   personval <- parsed |>

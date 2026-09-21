@@ -1,5 +1,9 @@
 # valresultat (development)
 
+* Adds `personroster()` with one row per candidate, party and official
+  personal-vote area. Official qualified-candidate totals take precedence,
+  other totals require verified complete district material, and personal-vote
+  shares are unrounded proportions on the 0–1 scale.
 * Gives `valresultat()` an analysis-oriented, level-specific public column
   contract while retaining the internal 83-column harmonised schema.
 * Retains unreported voting districts with `raknat = FALSE`, official
