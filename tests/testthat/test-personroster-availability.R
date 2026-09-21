@@ -40,6 +40,56 @@ test_that("raw absent, null and empty arrays have different information states",
   p$listRoster[[1]]$personroster <- NULL
   expect_identical(.personrost_partistatus(p), NA)
 })
+
+test_that("missing summaries are complete only with explicit zero detail", {
+  zero <- personrost_fixture()
+  zero$summeradePersonroster <- NULL
+  zero$listRoster[[1]]$antalRosterMedPersonrost <- 0L
+  zero$listRoster[[1]]$personroster <- list()
+  expect_true(.personrost_partistatus(zero))
+
+  explicit <- zero
+  explicit$summeradePersonroster <- list()
+  expect_true(.personrost_partistatus(explicit))
+
+  contradictory_detail <- zero
+  contradictory_detail$listRoster[[1]]$personroster <- list(
+    list(kandidatNummer = "1", antalPersonroster = 1L)
+  )
+  expect_identical(.personrost_partistatus(contradictory_detail), NA)
+
+  contradictory_total <- zero
+  contradictory_total$listRoster[[1]]$antalRosterMedPersonrost <- 1L
+  expect_identical(.personrost_partistatus(contradictory_total), NA)
+})
+
+test_that("verified zero nodes extend positive totals without hiding missing parties", {
+  raw <- personrost_raw()
+  zero <- raw$valdistrikt[[2]]$rostfordelning$rosterPaverkaMandat$partiRoster[[1]]
+  zero$summeradePersonroster <- NULL
+  zero$listRoster[[1]]$antalRosterMedPersonrost <- 0L
+  zero$listRoster[[1]]$personroster <- list()
+  raw$valdistrikt[[2]]$rostfordelning$rosterPaverkaMandat$partiRoster[[1]] <- zero
+
+  complete <- .personrostunderlag_2026(raw, "00")
+  expect_true(complete$status$personroster_available)
+  candidates <- tibble::tibble(
+    kandidatnummer = c("1", "2"), valtyp = "RD", partikod = "A",
+    valomradeskod = "00", giltig = TRUE
+  )
+  expect_identical(
+    .personrosttotaler_2026(candidates, complete$status, complete$roster)$antal_personroster_totalt,
+    c(3L, 0L)
+  )
+
+  raw$valdistrikt[[2]]$rostfordelning$rosterPaverkaMandat$partiRoster <- list()
+  missing <- .personrostunderlag_2026(raw, "00")
+  expect_identical(missing$status$personroster_available, NA)
+  expect_identical(
+    .personrosttotaler_2026(candidates, missing$status, missing$roster)$antal_personroster_totalt,
+    c(NA_integer_, NA_integer_)
+  )
+})
 test_that("invalid types, duplicate identities and contradictory totals remain unknown", {
   for (x in list(NA_integer_, -1L, 1.5, "3", Inf, NULL, c(1L, 2L))) {
     p <- personrost_fixture()

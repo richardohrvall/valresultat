@@ -18,7 +18,8 @@
 #'   ersättare inom val, område/valkrets, parti och ersättargrupp.
 #'   `ledamot_kandidatnummer`, `ersattare_kandidatnummer` och
 #'   `ersattarordning` identifierar relationen. Ordning är integer; koder och
-#'   namn är character. Ett känt tomt resultat behåller samma typade schema.
+#'   namn är character. Parti- och relationsfält ligger före geografi och
+#'   teknisk valmetadata. Ett känt tomt resultat behåller samma typade schema.
 #' @examples
 #' \dontrun{ersattare(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 #' @seealso [valda()], [mandat()], [valresultat-package]
@@ -77,5 +78,31 @@ ersattare <- function(
   )
 
   parsed |>
-    purrr::list_rbind()
+    purrr::list_rbind() |>
+    dplyr::select(dplyr::all_of(c(
+      "valtillfalle",
+      "valtyp",
+      "partikod",
+      "partiforkortning",
+      "partibeteckning",
+      "partifarg",
+      "ledamot_kandidatnummer",
+      "ledamot_namn",
+      "ersattare_kandidatnummer",
+      "ersattare_namn",
+      "ersattarordning",
+      "ersattargrupp",
+      "valgrund_id",
+      "valgrund_text",
+      "geografiniva",
+      "valomradeskod",
+      "valomradesnamn",
+      "valkretskod",
+      "valkretsnamn",
+      "valklass",
+      "rakningstillfalle",
+      "valdatum",
+      "valdatum_fg",
+      "test"
+    )))
 }

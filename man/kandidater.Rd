@@ -46,6 +46,8 @@ och \code{FALSE} när informationen finns men kandidaten inte uppfyller villkore
 Samma regel gäller \code{invald}. \code{antal_personroster_totalt} är 0 endast när
 komplett underlag saknar en rad för kandidaten; partiellt eller oklart
 underlag ger \code{NA}. Antalsfält är integer och indikatorer logical.
+Kandidatidentitet och parti följs av personröst-, personvals- och
+invaldsfält; tekniska kandidatursammanfattningar ligger sist.
 }
 \description{
 Skapar en analysvänlig kandidatfil.
@@ -60,6 +62,8 @@ verifierat komplett för partiet i alla valområden från kandidatens giltiga
 kandidaturer. Saknas kandidaten i ett sådant komplett underlag blir totalen
 0. Saknat, partiellt eller motsägelsefullt underlag ger \code{NA}, även om vissa
 personröster har rapporterats. Personvalskvalificering bedöms separat.
+En saknad summeringsnod räknas som verifierad noll endast när varje relevant
+lista uttryckligen har noll personröster och en tom personröstarray.
 }
 \examples{
 \dontrun{kandidater(val = "RD", source = "local", data_dir = "mitt_arkiv")}

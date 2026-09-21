@@ -227,6 +227,15 @@ test_that("ersattare has a stable public relationship schema and key", {
   expect_false(anyDuplicated(out[key]) > 0L)
   expect_type(out$ersattarordning, "integer")
   expect_false(any(vapply(out, is.list, logical(1))))
+  expect_identical(names(out), c(
+    "valtillfalle", "valtyp", "partikod", "partiforkortning",
+    "partibeteckning", "partifarg", "ledamot_kandidatnummer",
+    "ledamot_namn", "ersattare_kandidatnummer", "ersattare_namn",
+    "ersattarordning", "ersattargrupp", "valgrund_id", "valgrund_text",
+    "geografiniva", "valomradeskod", "valomradesnamn", "valkretskod",
+    "valkretsnamn", "valklass", "rakningstillfalle", "valdatum",
+    "valdatum_fg", "test"
+  ))
 })
 
 test_that("the intended public namespace is fixed", {

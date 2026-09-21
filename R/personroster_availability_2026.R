@@ -28,6 +28,14 @@
   if (!is.null(listor) && !.personrost_array(listor)) return(NA)
   if (!is.null(summering) && !.personrost_array(summering)) return(NA)
   if (!all(vapply(listor, .personrost_objekt, logical(1)))) return(NA)
+  verifierad_nolla <- is.null(summering) && length(listor) > 0L &&
+    all(vapply(listor, function(l) {
+      .personrost_heltal(l[["antalRosterMedPersonrost"]]) &&
+        l[["antalRosterMedPersonrost"]] == 0L &&
+        .personrost_array(l[["personroster"]]) &&
+        length(l[["personroster"]]) == 0L
+    }, logical(1)))
+  if (verifierad_nolla) return(TRUE)
   information <- any(vapply(listor, function(l) !is.null(l[["personroster"]]) ||
                              !is.null(l[["antalRosterMedPersonrost"]]), logical(1)))
   if (is.null(summering) && !information) return(FALSE)
@@ -104,6 +112,12 @@
     if (isTRUE(available)) {
       rader <- lapply(noder, function(p) {
         x <- .personrost_rader(p$summeradePersonroster, "kandidatnummer")
+        if (is.null(x) || !length(x)) {
+          return(tibble::tibble(
+            kandidatnummer = character(),
+            antal_personroster = integer()
+          ))
+        }
         tibble::tibble(kandidatnummer = names(x), antal_personroster = unname(x))
       }) |> purrr::list_rbind()
       if (nrow(rader)) {

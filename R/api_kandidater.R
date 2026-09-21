@@ -11,6 +11,8 @@
 #' kandidaturer. Saknas kandidaten i ett sådant komplett underlag blir totalen
 #' 0. Saknat, partiellt eller motsägelsefullt underlag ger `NA`, även om vissa
 #' personröster har rapporterats. Personvalskvalificering bedöms separat.
+#' En saknad summeringsnod räknas som verifierad noll endast när varje relevant
+#' lista uttryckligen har noll personröster och en tom personröstarray.
 #'
 #' @param ar Valår. För närvarande stöds 2026.
 #' @param val En eller flera valtyper: `"RD"`, `"RF"` eller `"KF"`.
@@ -34,6 +36,8 @@
 #'   Samma regel gäller `invald`. `antal_personroster_totalt` är 0 endast när
 #'   komplett underlag saknar en rad för kandidaten; partiellt eller oklart
 #'   underlag ger `NA`. Antalsfält är integer och indikatorer logical.
+#'   Kandidatidentitet och parti följs av personröst-, personvals- och
+#'   invaldsfält; tekniska kandidatursammanfattningar ligger sist.
 #' @examples
 #' \dontrun{kandidater(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 #' @seealso [kandidaturer()], [valda()], [valresultat-package]

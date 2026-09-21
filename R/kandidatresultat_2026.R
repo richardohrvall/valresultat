@@ -414,5 +414,22 @@
       -personval_available,
       -kvalificerad_personval_found,
       -invald_found
+    ) |>
+    dplyr::relocate(
+      dplyr::all_of(c(
+        "antal_personroster_totalt",
+        "kvalificerad_personval",
+        "antal_personvalsomraden",
+        "invald",
+        "invald_valomradeskod",
+        "invald_valomradesnamn",
+        "invald_valkretskod",
+        "invald_valkretsnamn",
+        "invalsordning",
+        "valgrund_id",
+        "valgrund_text",
+        "ersattargrupp"
+      )),
+      .after = dplyr::any_of("namn")
     )
 }

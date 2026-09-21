@@ -37,7 +37,8 @@ En tibble där en rad är relationen mellan en vald ledamot och en
 ersättare inom val, område/valkrets, parti och ersättargrupp.
 \code{ledamot_kandidatnummer}, \code{ersattare_kandidatnummer} och
 \code{ersattarordning} identifierar relationen. Ordning är integer; koder och
-namn är character. Ett känt tomt resultat behåller samma typade schema.
+namn är character. Parti- och relationsfält ligger före geografi och
+teknisk valmetadata. Ett känt tomt resultat behåller samma typade schema.
 }
 \description{
 Hämtar relationer mellan valda ledamöter och deras ersättare från

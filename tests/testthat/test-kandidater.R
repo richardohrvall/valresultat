@@ -6,10 +6,10 @@ test_that("candidate table preserves its key and excludes invalid candidacies", 
   expect_false(any(vapply(out, is.list, logical(1))))
   expect_identical(names(out), c(
     "valtillfalle", "kandidatnummer", "valtyp", "partikod",
-    "partiforkortning", "partibeteckning", "namn", "namn_varierar",
-    "antal_namn", "kon", "alder_pa_valdagen", "folkbokforingskommun",
+    "partiforkortning", "partibeteckning", "namn", "kon",
+    "alder_pa_valdagen", "folkbokforingskommun",
     "valomradeskod", "valomradesnamn", "valkretskod", "valkretsnamn",
-    "antal_valomraden", "flera_valomraden", "antal_valkretsar",
+    "namn_varierar", "antal_namn", "antal_valomraden", "flera_valomraden", "antal_valkretsar",
     "flera_valkretsar", "antal_listor", "flera_listor", "antal_partier",
     "flera_partier", "antal_valtyper", "flera_valtyper"
   ))
@@ -81,18 +81,30 @@ test_that("candidate result pipeline respects availability without network acces
     expect_false(any(vapply(out, is.list, logical(1))))
     expect_identical(names(out), c(
       "valtillfalle", "kandidatnummer", "valtyp", "partikod",
-      "partiforkortning", "partibeteckning", "namn", "namn_varierar",
-      "antal_namn", "kon", "alder_pa_valdagen", "folkbokforingskommun",
-      "valomradeskod", "valomradesnamn", "valkretskod", "valkretsnamn",
-      "antal_valomraden", "flera_valomraden", "antal_valkretsar",
-      "flera_valkretsar", "antal_listor", "flera_listor", "antal_partier",
-      "flera_partier", "antal_valtyper", "flera_valtyper",
-      "antal_personroster_totalt", "antal_personvalsomraden", "invald_valomradeskod",
+      "partiforkortning", "partibeteckning", "namn",
+      "antal_personroster_totalt", "kvalificerad_personval",
+      "antal_personvalsomraden", "invald", "invald_valomradeskod",
       "invald_valomradesnamn", "invald_valkretskod", "invald_valkretsnamn",
       "invalsordning", "valgrund_id", "valgrund_text", "ersattargrupp",
-      "kvalificerad_personval", "invald"
+      "kon", "alder_pa_valdagen", "folkbokforingskommun",
+      "valomradeskod", "valomradesnamn", "valkretskod", "valkretsnamn",
+      "namn_varierar", "antal_namn", "antal_valomraden", "flera_valomraden",
+      "antal_valkretsar", "flera_valkretsar", "antal_listor", "flera_listor",
+      "antal_partier", "flera_partier", "antal_valtyper", "flera_valtyper"
     ))
   }
+})
+
+test_that("valda preserves the complete candidate column contract", {
+  candidates <- tibble::tibble(
+    kandidatnummer = c("1", "2"),
+    invald = c(TRUE, FALSE),
+    marker = c("a", "b")
+  )
+  local_mocked_bindings(kandidater = function(...) candidates)
+  out <- valda(progress = FALSE)
+  expect_identical(names(out), names(candidates))
+  expect_identical(out, dplyr::filter(candidates, invald %in% TRUE))
 })
 
 test_that("positive candidate status survives partial data without inventing negatives", {
