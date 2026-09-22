@@ -14,8 +14,9 @@
 #'
 #' @return En tibble där en rad är en källrad för en kandidatur på en
 #'   valsedel/lista i ett valområde och eventuell valkrets. En kandidat kan
-#'   ha flera rader och ogiltiga kandidaturer bevaras. Identitetsfält omfattar
-#'   valtyp, område, valkrets, parti, listnummer, ordning och kandidatnummer.
+#'   ha flera rader och ogiltiga kandidaturer bevaras. Den avsedda radnyckeln
+#'   är `valtyp`, `valomradeskod`, `valkretskod`, `partikod`, `listnummer`,
+#'   `ordning` och `kandidatnummer` tillsammans.
 #'   Källans namn bevaras i `namn` och `giltig` är logical.
 #'   För KF är valområdet kommunen och `valomradesnamn` är paketets korta
 #'   kommunnamn, uppslaget exakt via `valomradeskod`.

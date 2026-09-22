@@ -16,8 +16,9 @@
 #'
 #' @return En tibble där en rad är relationen mellan en vald ledamot och en
 #'   ersättare inom val, område/valkrets, parti och ersättargrupp.
-#'   `ledamot_kandidatnummer`, `ersattare_kandidatnummer` och
-#'   `ersattarordning` identifierar relationen. Ordning är integer; koder och
+#'   Den avsedda radnyckeln är `valtillfalle`, `valtyp`, `geografiniva`,
+#'   `valomradeskod`, `valkretskod`, `partikod`, `ledamot_kandidatnummer`,
+#'   `ersattare_kandidatnummer` och `ersattarordning` tillsammans. Ordning är integer; koder och
 #'   namn är character. Parti- och relationsfält ligger före geografi och
 #'   teknisk valmetadata. Ett känt tomt resultat behåller samma typade schema.
 #'   För KF är `valomradesnamn` paketets korta kommunnamn, uppslaget via

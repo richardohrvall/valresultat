@@ -113,19 +113,78 @@
   data
 }
 
+.exakt_andel_2026 <- function(taljare, namnare, tillaten = TRUE) {
+  tillaten <- rep_len(tillaten, length(taljare))
+  out <- rep(NA_real_, length(taljare))
+  ok <- tillaten %in% TRUE & !is.na(taljare) & !is.na(namnare) & namnare > 0
+  out[ok] <- as.double(taljare[ok]) / as.double(namnare[ok])
+  out
+}
+
+.andelsskillnad_2026 <- function(aktuell, foregaende) {
+  out <- rep(NA_real_, length(aktuell))
+  ok <- !is.na(aktuell) & !is.na(foregaende)
+  out[ok] <- aktuell[ok] - foregaende[ok]
+  out
+}
+
+.jamforelse_tillaten_2026 <- function(status) {
+  status <- tolower(trimws(status))
+  nekad <- !is.na(status) & grepl("^(ej|kan ej)\\s", status)
+  !nekad
+}
+
 .valresultat_public_andelar_2026 <- function(data) {
-  andelar <- c(
-    "andel_roster", "andel_roster_fg", "diff_andel_roster",
-    "valdel", "valdel_fg", "diff_valdel",
-    "andel_ogiltiga", "andel_ogiltiga_fg", "diff_andel_ogiltiga",
-    "andel_ej_anmalt_deltagande", "andel_ej_anmalt_deltagande_fg",
-    "diff_andel_ej_anmalt_deltagande",
-    "andel_blanka", "andel_blanka_fg", "diff_andel_blanka",
-    "andel_ovriga_ogiltiga", "andel_ovriga_ogiltiga_fg",
-    "diff_andel_ovriga_ogiltiga",
-    "valomradessparr_procent", "valkretssparr_procent"
+  jamforbar <- .jamforelse_tillaten_2026(data$status_jamforelse)
+
+  data$andel_roster <- .exakt_andel_2026(data$antal_roster, data$giltiga_roster)
+  data$andel_roster_fg <- .exakt_andel_2026(
+    data$antal_roster_fg, data$giltiga_roster_fg, jamforbar
   )
-  data <- .publika_andelar_0_1_2026(data, andelar)
+  data$diff_andel_roster <- .andelsskillnad_2026(
+    data$andel_roster, data$andel_roster_fg
+  )
+
+  is_distrikt <- data$geografiniva == "valdistrikt"
+  raknat <- rep(TRUE, nrow(data))
+  if ("raknat" %in% names(data)) raknat[is_distrikt] <- data$raknat[is_distrikt] %in% TRUE
+  uppsamling <- is_distrikt & !is.na(data$valdistriktstyp) &
+    tolower(data$valdistriktstyp) == "uppsamlingsdistrikt"
+  aktuell_tillaten <- !is_distrikt | (raknat & !uppsamling)
+  foregaende_tillaten <- jamforbar
+  aktuell_namnare <- data$antal_rostberattigade_raknade
+  aktuell_namnare[is_distrikt] <- data$antal_rostberattigade[is_distrikt]
+  data$valdel <- .exakt_andel_2026(
+    data$totalt_antal_roster, aktuell_namnare, aktuell_tillaten
+  )
+  data$valdel_fg <- .exakt_andel_2026(
+    data$totalt_antal_roster_fg, data$antal_rostberattigade_fg,
+    foregaende_tillaten
+  )
+  data$diff_valdel <- .andelsskillnad_2026(data$valdel, data$valdel_fg)
+
+  andelspar <- list(
+    c("andel_ogiltiga", "ogiltiga_roster", "andel_ogiltiga_fg",
+      "ogiltiga_roster_fg", "diff_andel_ogiltiga"),
+    c("andel_ej_anmalt_deltagande", "roster_ej_anmalt_deltagande",
+      "andel_ej_anmalt_deltagande_fg", "roster_ej_anmalt_deltagande_fg",
+      "diff_andel_ej_anmalt_deltagande"),
+    c("andel_blanka", "blanka_roster", "andel_blanka_fg",
+      "blanka_roster_fg", "diff_andel_blanka"),
+    c("andel_ovriga_ogiltiga", "ovriga_ogiltiga", "andel_ovriga_ogiltiga_fg",
+      "ovriga_ogiltiga_fg", "diff_andel_ovriga_ogiltiga")
+  )
+  for (par in andelspar) {
+    data[[par[1]]] <- .exakt_andel_2026(data[[par[2]]], data$totalt_antal_roster)
+    data[[par[3]]] <- .exakt_andel_2026(
+      data[[par[4]]], data$totalt_antal_roster_fg, jamforbar
+    )
+    data[[par[5]]] <- .andelsskillnad_2026(data[[par[1]]], data[[par[3]]])
+  }
+
+  data <- .publika_andelar_0_1_2026(
+    data, c("valomradessparr_procent", "valkretssparr_procent")
+  )
   names(data)[names(data) == "valomradessparr_procent"] <- "valomradessparr"
   names(data)[names(data) == "valkretssparr_procent"] <- "valkretssparr"
   data

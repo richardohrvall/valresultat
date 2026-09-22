@@ -1,10 +1,10 @@
-# valresultat (development)
+# valresultat 0.2.0
 
-* Standardizes all public vote shares, turnout rates, share differences and
-  mandate thresholds as proportions on the 0–1 scale. A difference of `0.025`
-  means an increase of 2.5 percentage points, not a relative 2.5 percent
-  change. Public threshold columns are now `valomradessparr` and
-  `valkretssparr`.
+* Standardizes public vote shares, turnout rates, share differences and mandate
+  thresholds as proportions on the 0–1 scale. Verified shares are calculated
+  exactly from count fields; `0.025` means an increase of 2.5 percentage points,
+  not a relative 2.5 percent change. Public threshold columns are now
+  `valomradessparr` and `valkretssparr`.
 * Adds authoritative short municipality names by municipality code. Election
   results preserve a separate official municipality label, while tables that
   already identify KF municipalities as electoral areas use the short name in
@@ -21,6 +21,12 @@
   the same ZIP and a fixed 2026 county-code lookup.
 * Keeps only analytically distinct reporting scopes in each public level's
   column contract and places district reporting status next to its geography.
+* Preserves authoritative historical mandate totals even when the current
+  party list is not a complete historical party universe.
+* Separates unambiguous candidacy geography from election geography and keeps
+  the elected area available for candidates who stood in several areas.
+* Distinguishes verified zero personal votes from missing, partial or unclear
+  person-vote material with stricter availability checks.
 
 # valresultat 0.1.1
 

@@ -132,10 +132,18 @@ The package uses official results at the requested geographic level when those
 results are provided by Valmyndigheten rather than automatically reconstructing
 them from lower-level data.
 
-All public vote shares, turnout rates and mandate thresholds are unrounded
-proportions on the 0–1 scale. Differences between shares use the same scale and
-are absolute differences, not relative percentage changes. For example,
-`diff_andel_roster = 0.025` means an increase of 2.5 percentage points.
+Public shares are proportions on the 0–1 scale. Where exact numerators and
+denominators exist and their meaning has been verified, the public share is
+calculated from those counts. Official source values are used otherwise.
+Differences between shares use the same scale and are absolute differences,
+not relative percentage changes. For example, `diff_andel_roster = 0.025`
+means an increase of 2.5 percentage points.
+
+For an ordinary reported voting district, `valdel` corresponds to
+Valmyndigheten's `valdeltagandeVallokal`. It is not complete turnout among all
+eligible voters attached to that district: late advance and postal votes are
+reported in separate collection districts and cannot be assigned back to the
+ordinary district. Collection districts therefore have `NA` in `valdel`.
 
 In `valresultat()`, `kommunnamn` is a short analysis name looked up by
 `kommunkod`, while `kommunnamn_officiellt` preserves Valmyndigheten's source
@@ -229,12 +237,13 @@ Support for earlier elections is planned for a later stage.
 
 ## Status
 
-The package should currently be regarded as experimental. Final individual
-vote-distribution (D), subordinate summary (U) and mandate (M) paths have been
-checked against selected Valmyndigheten 2026 rehearsal files. Preliminary
-paths and superior summaries (O) are implemented and covered by deterministic
-fixtures, but have not yet been verified against corresponding real local
-files. Live election data may reveal additional source-format edge cases.
+The package should currently be regarded as experimental. Final RD 2026 paths,
+including result, candidate and personal-vote structures, have been checked
+against live files. Preliminary D, U and M paths for RD, RF and KF have been
+checked against a time-stamped partial live snapshot. Final RF/KF result files
+have rehearsal coverage but still need renewed checks against final live files.
+Superior summaries (O) are implemented and fixture-tested; their exact turnout
+ratio still needs a targeted live-file check.
 
 Bug reports and suggestions are welcome through the GitHub repository.
 

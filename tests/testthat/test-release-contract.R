@@ -66,7 +66,10 @@ test_that("mandat accepts a valid level selected from val NULL", {
   key <- c("valtillfalle", "valtyp", "rakningstillfalle", "geografiniva",
            "valomradeskod", "valkretskod", "partikod")
   expect_false(anyDuplicated(out[key]) > 0L)
-  expect_identical(names(out), names(.mandat_public_schema_2026()))
+  mandat_contract <- readLines(
+    test_path("fixtures", "mandat-public-columns.txt"), encoding = "UTF-8"
+  )
+  expect_identical(names(out), mandat_contract)
   expect_identical(vapply(out, typeof, ""),
                    vapply(.mandat_public_schema_2026(), typeof, ""))
   expect_false(any(vapply(out, is.list, logical(1))))

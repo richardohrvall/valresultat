@@ -30,7 +30,10 @@
 #' innehåller en gemensam analyskärna och endast den geografiska identifikation
 #' som är relevant för vald `niva`. Datum, tidsstämplar och geografiska koder
 #' är character, antal integer, publika andelar double på 0–1-skalan och
-#' indikatorer logical. Differenser mellan andelar uttrycks på samma skala:
+#' indikatorer logical. Publika andelar uttrycks som proportioner på 0–1-skalan.
+#' Där exakta täljare och nämnare finns och deras semantik är verifierad
+#' beräknas andelarna från antalsuppgifterna. Officiella källvärden används
+#' annars. Differenser mellan andelar uttrycks på samma skala:
 #' `0.025` betyder en ökning med 2,5 procentenheter och är inte en relativ
 #' procentuell förändring. `valomradessparr` och `valkretssparr` följer samma
 #' 0–1-konvention. Saknade eller ej tillämpliga fält är typade `NA`.
@@ -44,8 +47,13 @@
 #' valdistriktsnivå ligger `raknat` och distriktets `rapporteringstid` direkt
 #' efter geografin. Där används `antal_rostberattigade` för distriktets eget
 #' antal när rådata anger det, även om distriktet ännu inte är räknat.
-#' Distriktens `valdel` kommer från `valdeltagandeVallokal`, övriga nivåers
-#' från `valdeltagande`.
+#' På ett rapporterat vanligt valdistrikt beräknas `valdel` som totala röster
+#' dividerat med distriktets röstberättigade och motsvarar Valmyndighetens
+#' `valdeltagandeVallokal`. Det är inte fullt valdeltagande bland alla som hör
+#' till distriktet: sena förtids- och brevröster redovisas i separata
+#' uppsamlingsdistrikt och kan inte föras tillbaka till ett vanligt distrikt.
+#' Uppsamlingsdistrikt saknar därför `valdel`. På aggregerade nivåer används
+#' totala röster dividerat med röstberättigade i hittills räknade valdistrikt.
 #' `over_sparr` fylls bara från ett uttryckligt relevant besked i mandatkällan.
 #' Övriga partier får en rad endast om källnoden finns; explicit noll behålls.
 #' På valdistriktsnivå är `raknat` `TRUE` för distrikt med ett rapporterat
@@ -149,10 +157,10 @@ valresultat <- function(
            lan = "O", riket = "O")
   )
   if (niva == "lan" && val == "RD") {
-    stop("RD/lan st\u00f6ds inte i v1: officiell l\u00e4nssummering saknas.", call. = FALSE)
+    stop("RD/lan st\u00f6ds inte: officiell l\u00e4nssummering saknas.", call. = FALSE)
   }
   if (niva == "lan" && val == "RF") {
-    stop("RF/lan finns i OS-formatet men \u00e4r inte aktiverat i v1: slutlig k\u00e4lla ",
+    stop("RF/lan finns i OS-formatet men \u00e4r inte aktiverat: slutlig k\u00e4lla ",
          "\u00e4r inte verifierad. Anv\u00e4nd region.", call. = FALSE)
   }
   kalla <- unname(matris[[val]][niva])

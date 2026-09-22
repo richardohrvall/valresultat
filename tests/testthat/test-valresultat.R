@@ -57,7 +57,7 @@ test_that("defaults give exactly one natural main level and invalid inputs fail 
   expect_error(valresultat(archive = 1), "archive")
   expect_error(valresultat(update = NULL), "update")
   expect_error(valresultat(val = "RF", niva = "lan"), "OS-formatet.*inte aktiverat.*slutlig")
-  expect_error(valresultat(val = "RD", niva = "lan"), "v1")
+  expect_error(valresultat(val = "RD", niva = "lan"), "RD/lan.*officiell")
 })
 
 test_that("NULL levels are identical to explicit main levels for both counts", {
@@ -504,7 +504,7 @@ test_that("every public level has an exact frozen column contract", {
   }
 })
 
-test_that("public shares use the 0-1 scale for D, U, M and O sources", {
+test_that("public shares use exact count ratios for D, U, M and O sources", {
   lagg_till_andelar <- function(raw, kalla) {
     hamta <- function() switch(kalla,
       D = raw$valdistrikt[[1]], U = raw$kommuner[[1]],
@@ -517,31 +517,55 @@ test_that("public shares use the 0-1 scale for D, U, M and O sources", {
       if (kalla == "O") raw$helaLandet <<- obj
     }
     obj <- hamta()
-    obj$valdeltagande <- 60
-    obj$valdeltagandeVallokal <- 60
-    obj$valdeltagandeForegaendeVal <- 62.5
-    obj$forandringValdeltagande <- -2.5
-    obj$statusJamforelse <- "jamforbar"
+    obj$totaltAntalRoster <- 13L
+    obj$antalRostberattigade <- 17L
+    obj$antalRostberattigadeIRaknadeValdistrikt <- 16L
+    preliminar <- identical(raw$rakningstillfalle, "preliminar")
+    obj$valdeltagande <- if (preliminar) 81.3 else 81.25
+    obj$valdeltagandeVallokal <- if (preliminar) 76.5 else 76.47
+    obj$totaltAntalRosterForegaendeVal <- 11L
+    obj$antalRostberattigadeForegaendeVal <- 15L
+    obj$valdeltagandeForegaendeVal <- if (preliminar) 73.3 else 73.33
+    obj$forandringValdeltagande <- 8.0
+    obj$statusJamforelse <- "Kan j\u00e4mf\u00f6ras"
+    obj$rostfordelning$rosterPaverkaMandat$antalRoster <- 11L
+    obj$rostfordelning$rosterPaverkaMandat$antalRosterForegaendeVal <- 9L
     parti <- obj$rostfordelning$rosterPaverkaMandat$partiRoster[[1]]
-    parti$andelRoster <- 60
-    parti$andelRosterForegaendeVal <- 62.5
-    parti$forandringAndelRoster <- -2.5
+    parti$antalRoster <- 7L
+    parti$andelRoster <- if (preliminar) 63.6 else 63.64
+    parti$antalRosterForegaendeVal <- 6L
+    parti$andelRosterForegaendeVal <- if (preliminar) 66.7 else 66.67
+    parti$forandringAndelRoster <- -3.1
     obj$rostfordelning$rosterPaverkaMandat$partiRoster[[1]] <- parti
+    parti <- obj$rostfordelning$rosterPaverkaMandat$partiRoster[[2]]
+    parti$antalRoster <- 4L
+    parti$andelRoster <- if (preliminar) 36.4 else 36.36
+    parti$antalRosterForegaendeVal <- 3L
+    parti$andelRosterForegaendeVal <- if (preliminar) 33.3 else 33.33
+    parti$forandringAndelRoster <- 3.1
+    obj$rostfordelning$rosterPaverkaMandat$partiRoster[[2]] <- parti
     ogiltiga <- obj$rostfordelning$rosterEjPaverkaMandat
-    ogiltiga$andelRosterAvTotaltAntalRoster <- 16
-    ogiltiga$andelRosterAvTotaltAntalRosterForegaendeVal <- 20
-    ogiltiga$forandringAndelRosterAvTotaltAntalRoster <- -4
+    ogiltiga$antalRoster <- 2L
+    ogiltiga$andelRosterAvTotaltAntalRoster <- if (preliminar) 15.4 else 15.38
+    ogiltiga$antalRosterForegaendeVal <- 2L
+    ogiltiga$andelRosterAvTotaltAntalRosterForegaendeVal <- if (preliminar) 18.2 else 18.18
+    ogiltiga$forandringAndelRosterAvTotaltAntalRoster <- -2.8
     ogiltiga$rosterEjAnmaltDeltagande$andelRosterAvTotaltAntalRoster <- 0
+    ogiltiga$rosterEjAnmaltDeltagande$antalRosterForegaendeVal <- 0L
     ogiltiga$rosterEjAnmaltDeltagande$
       andelRosterAvTotaltAntalRosterForegaendeVal <- 0
     ogiltiga$rosterEjAnmaltDeltagande$
       forandringAndelRosterAvTotaltAntalRoster <- 0
-    ogiltiga$blankaRoster$andelRosterAvTotaltAntalRoster <- 16
-    ogiltiga$blankaRoster$andelRosterAvTotaltAntalRosterForegaendeVal <- 20
-    ogiltiga$blankaRoster$forandringAndelRosterAvTotaltAntalRoster <- -4
+    ogiltiga$blankaRoster$antalRoster <- 2L
+    ogiltiga$blankaRoster$andelRosterAvTotaltAntalRoster <- if (preliminar) 15.4 else 15.38
+    ogiltiga$blankaRoster$antalRosterForegaendeVal <- 1L
+    ogiltiga$blankaRoster$andelRosterAvTotaltAntalRosterForegaendeVal <- if (preliminar) 9.1 else 9.09
+    ogiltiga$blankaRoster$forandringAndelRosterAvTotaltAntalRoster <- 6.3
+    ogiltiga$ovrigaOgiltiga$antalRoster <- 0L
     ogiltiga$ovrigaOgiltiga$andelRosterAvTotaltAntalRoster <- 0
-    ogiltiga$ovrigaOgiltiga$andelRosterAvTotaltAntalRosterForegaendeVal <- NULL
-    ogiltiga$ovrigaOgiltiga$forandringAndelRosterAvTotaltAntalRoster <- NULL
+    ogiltiga$ovrigaOgiltiga$antalRosterForegaendeVal <- 1L
+    ogiltiga$ovrigaOgiltiga$andelRosterAvTotaltAntalRosterForegaendeVal <- if (preliminar) 9.1 else 9.09
+    ogiltiga$ovrigaOgiltiga$forandringAndelRosterAvTotaltAntalRoster <- -9.1
     obj$rostfordelning$rosterEjPaverkaMandat <- ogiltiga
     spara(obj)
     raw
@@ -557,24 +581,26 @@ test_that("public shares use the 0-1 scale for D, U, M and O sources", {
     spec <- specs[[kalla]]
     raw <- lagg_till_andelar(fixture_resultatraw(spec[["val"]], kalla), kalla)
     internt <- fixture_parse_resultat(spec[["val"]], spec[["niva"]], raw = raw)
-    expect_equal(internt$andel_roster[[1]], 60, info = kalla)
+    expect_equal(internt$andel_roster[[1]], 63.64, info = kalla)
     out <- fixture_public_resultat(spec[["val"]], spec[["niva"]], raw = raw)
     rad <- out[out$partikod == "0001", ][1, ]
-    expect_equal(rad$andel_roster, 0.6, info = kalla)
-    expect_equal(rad$andel_roster_fg, 0.625, info = kalla)
-    expect_equal(rad$diff_andel_roster, -0.025, info = kalla)
+    expect_equal(rad$andel_roster, 7 / 11, info = kalla)
+    expect_equal(rad$andel_roster_fg, 6 / 9, info = kalla)
+    expect_equal(rad$diff_andel_roster, 7 / 11 - 6 / 9, info = kalla)
     expect_equal(rad$diff_andel_roster,
                  rad$andel_roster - rad$andel_roster_fg, info = kalla)
-    expect_equal(rad$valdel, 0.6, info = kalla)
-    expect_equal(rad$valdel_fg, 0.625, info = kalla)
-    expect_equal(rad$diff_valdel, -0.025, info = kalla)
-    expect_equal(rad$andel_ogiltiga, 0.16, info = kalla)
-    expect_equal(rad$andel_ogiltiga_fg, 0.20, info = kalla)
-    expect_equal(rad$diff_andel_ogiltiga, -0.04, info = kalla)
+    expect_equal(rad$valdel, if (kalla == "D") 13 / 17 else 13 / 16, info = kalla)
+    expect_equal(rad$valdel_fg, 11 / 15, info = kalla)
+    expect_equal(rad$diff_valdel, rad$valdel - rad$valdel_fg, info = kalla)
+    expect_equal(rad$andel_ogiltiga, 2 / 13, info = kalla)
+    expect_equal(rad$andel_ogiltiga_fg, 2 / 11, info = kalla)
+    expect_equal(rad$diff_andel_ogiltiga, 2 / 13 - 2 / 11, info = kalla)
     expect_identical(rad$andel_ej_anmalt_deltagande, 0, info = kalla)
     expect_identical(rad$diff_andel_ej_anmalt_deltagande, 0, info = kalla)
-    expect_true(is.na(rad$andel_ovriga_ogiltiga_fg), info = kalla)
-    expect_true(is.na(rad$diff_andel_ovriga_ogiltiga), info = kalla)
+    expect_identical(rad$andel_ovriga_ogiltiga, 0, info = kalla)
+    expect_equal(rad$andel_ovriga_ogiltiga_fg, 1 / 11, info = kalla)
+    expect_equal(rad$diff_andel_ovriga_ogiltiga, -1 / 11, info = kalla)
+    expect_gt(nchar(format(rad$andel_roster, digits = 15)), 4L)
   }
 
   mandat_raw <- lagg_till_andelar(fixture_resultatraw("RD", "M"), "M")
@@ -585,6 +611,57 @@ test_that("public shares use the 0-1 scale for D, U, M and O sources", {
                      names(out)))
   expect_identical(unique(out$valomradessparr), 0.04)
   expect_identical(unique(out$valkretssparr), 0.12)
+})
+
+test_that("exact public shares preserve zero and missing information", {
+  data <- .valresultat_schema()[rep(NA_integer_, 6L), , drop = FALSE]
+  data$geografiniva <- rep("valdistrikt", 6L)
+  data$valdistriktstyp <- c(rep("valdistrikt", 5L), "uppsamlingsdistrikt")
+  data$raknat <- c(TRUE, TRUE, TRUE, FALSE, TRUE, TRUE)
+  data$status_jamforelse <- c(
+    "Kan jämföras", "Kan jämföras", "Kan jämföras", "Kan jämföras",
+    "Kan ej jämföras", "Kan jämföras"
+  )
+  data$antal_roster <- c(1L, 0L, 1L, NA_integer_, 1L, 1L)
+  data$giltiga_roster <- c(3L, 3L, 0L, NA_integer_, 3L, 3L)
+  data$antal_roster_fg <- rep(1L, 6L)
+  data$giltiga_roster_fg <- rep(4L, 6L)
+  data$totalt_antal_roster <- c(2L, 2L, 1L, 0L, 2L, 2L)
+  data$antal_rostberattigade <- c(5L, 5L, 0L, 5L, 5L, 5L)
+  data$totalt_antal_roster_fg <- rep(2L, 6L)
+  data$antal_rostberattigade_fg <- rep(5L, 6L)
+  data$ogiltiga_roster <- c(1L, 0L, 1L, NA_integer_, 1L, 1L)
+  data$ogiltiga_roster_fg <- rep(1L, 6L)
+  data$roster_ej_anmalt_deltagande <- 0L
+  data$roster_ej_anmalt_deltagande_fg <- 0L
+  data$blanka_roster <- data$ogiltiga_roster
+  data$blanka_roster_fg <- data$ogiltiga_roster_fg
+  data$ovriga_ogiltiga <- 0L
+  data$ovriga_ogiltiga_fg <- 0L
+
+  out <- .valresultat_public_andelar_2026(data)
+  expect_equal(out$andel_roster[1], 1 / 3)
+  expect_identical(out$andel_roster[2], 0)
+  expect_true(is.na(out$andel_roster[3]))
+  expect_true(is.na(out$andel_roster[4]))
+  expect_identical(out$andel_ogiltiga[2], 0)
+  expect_true(is.na(out$valdel[3]))
+  expect_true(is.na(out$valdel[4]))
+  expect_true(is.na(out$valdel[6]))
+  expect_true(all(is.na(out[5, c(
+    "andel_roster_fg", "diff_andel_roster", "valdel_fg", "diff_valdel",
+    "andel_ogiltiga_fg", "diff_andel_ogiltiga"
+  )])))
+  expect_equal(out$valdel_fg[6], 2 / 5)
+})
+
+test_that("exact shares agree with official rounded source percentages", {
+  exakt <- c(.exakt_andel_2026(7L, 11L), .exakt_andel_2026(13L, 17L),
+             .exakt_andel_2026(2L, 13L))
+  preliminar <- c(63.6, 76.5, 15.4)
+  slutlig <- c(63.64, 76.47, 15.38)
+  expect_true(all(abs(100 * exakt - preliminar) <= 0.05 + .Machine$double.eps))
+  expect_true(all(abs(100 * exakt - slutlig) <= 0.005 + .Machine$double.eps))
 })
 
 test_that("public reporting metadata exposes only analytically distinct scopes", {

@@ -66,7 +66,10 @@ harmoniseras alla källor till samma 83 kolumner. Det publika resultatet
 innehåller en gemensam analyskärna och endast den geografiska identifikation
 som är relevant för vald \code{niva}. Datum, tidsstämplar och geografiska koder
 är character, antal integer, publika andelar double på 0–1-skalan och
-indikatorer logical. Differenser mellan andelar uttrycks på samma skala:
+indikatorer logical. Publika andelar uttrycks som proportioner på 0–1-skalan.
+Där exakta täljare och nämnare finns och deras semantik är verifierad
+beräknas andelarna från antalsuppgifterna. Officiella källvärden används
+annars. Differenser mellan andelar uttrycks på samma skala:
 \code{0.025} betyder en ökning med 2,5 procentenheter och är inte en relativ
 procentuell förändring. \code{valomradessparr} och \code{valkretssparr} följer samma
 0–1-konvention. Saknade eller ej tillämpliga fält är typade \code{NA}.
@@ -80,8 +83,13 @@ antal röstberättigade i hittills räknade valdistrikt för området. På
 valdistriktsnivå ligger \code{raknat} och distriktets \code{rapporteringstid} direkt
 efter geografin. Där används \code{antal_rostberattigade} för distriktets eget
 antal när rådata anger det, även om distriktet ännu inte är räknat.
-Distriktens \code{valdel} kommer från \code{valdeltagandeVallokal}, övriga nivåers
-från \code{valdeltagande}.
+På ett rapporterat vanligt valdistrikt beräknas \code{valdel} som totala röster
+dividerat med distriktets röstberättigade och motsvarar Valmyndighetens
+\code{valdeltagandeVallokal}. Det är inte fullt valdeltagande bland alla som hör
+till distriktet: sena förtids- och brevröster redovisas i separata
+uppsamlingsdistrikt och kan inte föras tillbaka till ett vanligt distrikt.
+Uppsamlingsdistrikt saknar därför \code{valdel}. På aggregerade nivåer används
+totala röster dividerat med röstberättigade i hittills räknade valdistrikt.
 \code{over_sparr} fylls bara från ett uttryckligt relevant besked i mandatkällan.
 Övriga partier får en rad endast om källnoden finns; explicit noll behålls.
 På valdistriktsnivå är \code{raknat} \code{TRUE} för distrikt med ett rapporterat

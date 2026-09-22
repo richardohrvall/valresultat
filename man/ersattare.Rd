@@ -35,8 +35,9 @@ Lokal arkivering kräver en redan befintlig lokal fil.}
 \value{
 En tibble där en rad är relationen mellan en vald ledamot och en
 ersättare inom val, område/valkrets, parti och ersättargrupp.
-\code{ledamot_kandidatnummer}, \code{ersattare_kandidatnummer} och
-\code{ersattarordning} identifierar relationen. Ordning är integer; koder och
+Den avsedda radnyckeln är \code{valtillfalle}, \code{valtyp}, \code{geografiniva},
+\code{valomradeskod}, \code{valkretskod}, \code{partikod}, \code{ledamot_kandidatnummer},
+\code{ersattare_kandidatnummer} och \code{ersattarordning} tillsammans. Ordning är integer; koder och
 namn är character. Parti- och relationsfält ligger före geografi och
 teknisk valmetadata. Ett känt tomt resultat behåller samma typade schema.
 För KF är \code{valomradesnamn} paketets korta kommunnamn, uppslaget via

@@ -32,8 +32,9 @@ Lokal arkivering kräver en redan befintlig lokal fil.}
 \value{
 En tibble där en rad är en källrad för en kandidatur på en
 valsedel/lista i ett valområde och eventuell valkrets. En kandidat kan
-ha flera rader och ogiltiga kandidaturer bevaras. Identitetsfält omfattar
-valtyp, område, valkrets, parti, listnummer, ordning och kandidatnummer.
+ha flera rader och ogiltiga kandidaturer bevaras. Den avsedda radnyckeln
+är \code{valtyp}, \code{valomradeskod}, \code{valkretskod}, \code{partikod}, \code{listnummer},
+\code{ordning} och \code{kandidatnummer} tillsammans.
 Källans namn bevaras i \code{namn} och \code{giltig} är logical.
 För KF är valområdet kommunen och \code{valomradesnamn} är paketets korta
 kommunnamn, uppslaget exakt via \code{valomradeskod}.
