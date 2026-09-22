@@ -240,10 +240,12 @@ Support for earlier elections is planned for a later stage.
 The package should currently be regarded as experimental. Final RD 2026 paths,
 including result, candidate and personal-vote structures, have been checked
 against live files. Preliminary D, U and M paths for RD, RF and KF have been
-checked against a time-stamped partial live snapshot. Final RF/KF result files
-have rehearsal coverage but still need renewed checks against final live files.
-Superior summaries (O) are implemented and fixture-tested; their exact turnout
-ratio still needs a targeted live-file check.
+checked against a time-stamped partial live snapshot. Turnout in preliminary
+RF/KF superior summaries (O) has been checked against live files. Published
+final RF/KF files have also been checked, but counting was still incomplete at
+verification time. They did not yet contain established mandate, personal-
+election, elected-member or substitute structures. Verifying those structures
+once available remains an external source-data task, not a known package problem.
 
 Bug reports and suggestions are welcome through the GitHub repository.
 
