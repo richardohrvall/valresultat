@@ -47,7 +47,7 @@
 
 .valresultat_public_columns_2026 <- function(niva) {
   metadata <- c(
-    "valtillfalle", "valklass", "valtyp", "rakningstillfalle",
+    "valtillfalle", "valar", "valklass", "valtyp", "rakningstillfalle",
     "valdatum", "valdatum_fg", "test", "geografiniva"
   )
   filstatus <- c(
@@ -326,8 +326,14 @@
       } else {
         NA_character_
       },
-      kommunvalkretskod = purrr::map_chr(distrikt, \(x) as_chr_na(x$kommunvalkretsKod)),
-      kommunvalkretsnamn = purrr::map_chr(distrikt, \(x) as_chr_na(x$kommunvalkretsNamn)),
+      kommunvalkretskod = if (identical(raw$valtillfalle, "Val_2022") &&
+                               identical(raw$valtyp, "KF") && length(kretsar)) {
+        kretskoder[kretsindex]
+      } else purrr::map_chr(distrikt, \(x) as_chr_na(x$kommunvalkretsKod)),
+      kommunvalkretsnamn = if (identical(raw$valtillfalle, "Val_2022") &&
+                                identical(raw$valtyp, "KF") && length(kretsar)) {
+        vapply(kretsar[kretsindex], \(x) as_chr_na(x$namnValkrets), character(1))
+      } else purrr::map_chr(distrikt, \(x) as_chr_na(x$kommunvalkretsNamn)),
       raknat = raknat,
       rapporteringstid = dplyr::na_if(
         purrr::map_chr(distrikt, \(x) as_chr_na(x$rapporteringsTid)), ""
@@ -370,7 +376,7 @@
   out
 }
 
-.valresultat_public_2026 <- function(data, niva, raw = NULL) {
+.valresultat_public_2026 <- function(data, niva, raw = NULL, ar = 2026L) {
   if (niva == "valdistrikt") {
     context <- attr(raw, "valresultat_distrikt_context", exact = TRUE)
     if (is.null(context)) {
@@ -391,7 +397,8 @@
         stop("Parserns rapporterade distrikt matchar inte k\u00e4llan.", call. = FALSE)
       }
       for (namn in c(
-        "kommunnamn", "lannamn", "valomradesnamn", "valkretskod", "valkretsnamn"
+        "kommunnamn", "lannamn", "valomradesnamn", "valkretskod", "valkretsnamn",
+        "kommunvalkretskod", "kommunvalkretsnamn"
       )) data[[namn]] <- meta[[namn]][index]
       data$raknat <- rep(TRUE, nrow(data))
     } else {
@@ -411,6 +418,7 @@
   }
   data <- .komplettera_kommunnamn_2026(data, data$kommunnamn)
   data <- .valresultat_public_andelar_2026(data)
+  data$valar <- rep(as.integer(ar), nrow(data))
   columns <- .valresultat_public_columns_2026(niva)
   data[columns]
 }

@@ -1,5 +1,15 @@
 # valresultat 0.3.0.9000
 
+* `valresultat()` now accepts exact year vectors, `ar = "alla"`, and inclusive
+  `fran`/`till` ranges over supported election years. Multi-year results are
+  returned in long format with integer `valar` directly after `valtillfalle`.
+  All selected years must support the requested election, count and level.
+* Adds `valresultat(ar = 2022)` for official preliminary and final district
+  and mandate-file vote results (RD: districts, constituencies, nation;
+  RF: districts, region constituencies, regions; KF: districts, municipal
+  constituencies where present, municipalities). Source paths come from the
+  `val2022` index. The existing public schemas and 0–1 shares are retained;
+  unavailable previous-election comparisons remain `NA`.
 * Extends `personroster()` with independent geographic, ballot-list and
   verified-zero controls. District and list views are sparse by default;
   `komplettera_nollor = TRUE` adds verified zeros. Its established default

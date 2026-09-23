@@ -44,7 +44,9 @@ library(valresultat)
 | `valda()` | Elected candidates; a convenience view based on `kandidater()` |
 | `ersattare()` | Substitute relationships for elected representatives |
 
-The functions currently target the 2026 parliamentary (`RD`), regional (`RF`) and municipal (`KF`) elections where the corresponding source data are available.
+Most functions currently target the 2026 parliamentary (`RD`), regional (`RF`)
+and municipal (`KF`) elections. `valresultat()` also supports selected official
+2022 result levels.
 
 ## Quick start
 
@@ -89,6 +91,24 @@ For `valresultat()`, omitting `niva` returns the main level for the election:
 - `KF` → `kommun`
 
 Supported geographic levels depend on the election type and on the official source data.
+
+`valresultat()` can return several years in long format. `valar` is an integer
+time variable directly after `valtillfalle`; the same result columns are
+stacked by year. Specify exact years with `ar`, all supported years for the
+election with `ar = "alla"`, or an inclusive range among supported years with
+`fran` and/or `till`:
+
+```r
+valresultat(ar = 2026, val = "RD", niva = "riket")
+valresultat(ar = c(2022, 2026), val = "RD", niva = "riket")
+valresultat(ar = "alla", val = "RD", niva = "riket")
+valresultat(fran = 2010, till = 2026, val = "RD", niva = "riket")
+```
+
+Exact years retain the order supplied in `ar`; `"alla"` and ranges are
+chronological. Every selected year must support the requested geographic
+level. An unsupported combination or missing required source file stops the
+whole call.
 
 ## Election results
 
@@ -248,7 +268,23 @@ The 2026 implementation currently includes support for:
 - local and remote source files
 - optional local archiving of source files
 
-Support for earlier elections is planned for a later stage.
+Broader support for earlier elections is planned for later stages.
+
+`valresultat(ar = 2022)` supports both `rakning = "preliminar"` and
+`rakning = "slutlig"` at these official source levels:
+
+| Election | District (D) | Constituency (M) | Election area (M) |
+| --- | --- | --- | --- |
+| RD | `valdistrikt` | `riksdagsvalkrets` | `riket` |
+| RF | `valdistrikt` | `regionvalkrets` | `region` |
+| KF | `valdistrikt` | `kommunvalkrets` where divided | `kommun` |
+
+For example, `valresultat(ar = 2022, val = "RD", niva = "riket")` reads the
+official national result. Other 2022 levels are unavailable because the
+separate U/O summaries used in 2026 are absent from the 2022 result index.
+The 2022 result JSON does not contain most previous-election comparisons, so
+those columns are `NA`; the separate historical comparison files are not yet
+integrated. Other public functions remain 2026-only.
 
 ## Status
 

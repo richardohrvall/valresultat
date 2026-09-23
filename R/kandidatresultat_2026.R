@@ -12,21 +12,7 @@
     update = FALSE,
     archive = FALSE
 ) {
-
-  source <- match.arg(source)
-  samling <- .resultatsamling_2026()
-
-  index_file <- .resolve_val_file(
-    path = "index.md5", ar = 2026, samling = samling, source = source,
-    data_dir = data_dir, update = update, archive = archive
-  )
-
-  readLines(
-    index_file,
-    warn = FALSE,
-    encoding = "UTF-8"
-  ) |>
-    parse_index_2026()
+  .read_resultatindex(2026, match.arg(source), data_dir, update, archive)
 }
 
 
@@ -70,14 +56,7 @@
     update = FALSE,
     archive = FALSE
 ) {
-
-  source <- match.arg(source)
-  samling <- .resultatsamling_2026()
-
-  .resolve_val_file(
-    path = path, ar = 2026, samling = samling, source = source,
-    data_dir = data_dir, update = update, archive = archive
-  )
+  .resultat_file(2026, path, match.arg(source), data_dir, update, archive)
 }
 
 

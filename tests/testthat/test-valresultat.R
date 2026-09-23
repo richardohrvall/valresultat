@@ -31,7 +31,7 @@ test_that("all 48 election-level-count combinations select the decided source", 
       typer <- vapply(.valresultat_schema(), typeof, "")
       typer <- c(
         typer, kommunnamn_officiellt = "character", raknat = "logical",
-        valomradessparr = "double", valkretssparr = "double"
+        valar = "integer", valomradessparr = "double", valkretssparr = "double"
       )
       expect_identical(unname(vapply(out, typeof, "")), unname(typer[names(out)]))
     }
@@ -43,8 +43,8 @@ test_that("defaults give exactly one natural main level and invalid inputs fail 
   for (val in list(NULL, character(), NA_character_, c("RD", "RF"), "EU", 1)) {
     expect_error(valresultat(val = val), "val|Val")
   }
-  for (ar in list(2022, 2026.5, NA_real_, numeric(), c(2026, 2026), "2026")) {
-    expect_error(valresultat(ar = ar), "2026")
+  for (ar in list(2021, 2026.5, NA_real_, numeric(), "2026")) {
+    expect_error(valresultat(ar = ar), "2022, 2026")
   }
   for (niva in list(character(), NA_character_, c("riket", "kommun"), "fel")) {
     expect_error(valresultat(niva = niva), "niva|Niv")
@@ -496,7 +496,7 @@ test_that("every public level has an exact frozen column contract", {
     typer <- c(
       vapply(.valresultat_schema(), typeof, ""),
       kommunnamn_officiellt = "character", raknat = "logical",
-      valomradessparr = "double", valkretssparr = "double"
+      valar = "integer", valomradessparr = "double", valkretssparr = "double"
     )
     expect_identical(
       unname(vapply(out, typeof, "")), unname(typer[kolumner]), info = niva

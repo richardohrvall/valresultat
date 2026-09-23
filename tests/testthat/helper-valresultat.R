@@ -1,4 +1,21 @@
 # Små handbyggda källobjekt; inga rådata eller nätanrop.
+fixture_resultat_2022 <- function(val, kalla, rakning = "slutlig") {
+  raw <- fixture_resultatraw(val, kalla, rakning)
+  raw$valtillfalle <- "Val_20220911"
+  raw$valklass <- raw$valdatum <- raw$tidigareValdatum <- raw$test <- NULL
+  if (kalla == "D") {
+    context <- attr(raw, "valresultat_distrikt_context")
+    context$mandat <- fixture_resultat_2022(val, "M", rakning)
+    context$summering <- NULL
+    attr(raw, "valresultat_distrikt_context") <- context
+    for (i in seq_along(raw$valdistrikt)) {
+      raw$valdistrikt[[i]]$kommunvalkretsKod <- NULL
+      raw$valdistrikt[[i]]$kommunvalkretsNamn <- NULL
+    }
+  }
+  .normalisera_resultat_2022(raw)
+}
+
 fixture_roster <- function(skala = 1, ovriga = NULL) {
   list(
     rosterPaverkaMandat = list(antalRoster = 10 * skala,

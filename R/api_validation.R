@@ -28,8 +28,8 @@
 }
 
 .check_public_args <- function(ar, funktion, source, data_dir, update, archive,
-                               progress = NULL) {
-  .check_ar_2026(ar, funktion)
+                               progress = NULL, valar_resolved = FALSE) {
+  if (!valar_resolved) .check_ar_2026(ar, funktion)
   .check_data_dir(data_dir)
   .check_flag(update, "update")
   .check_flag(archive, "archive")

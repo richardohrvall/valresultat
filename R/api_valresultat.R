@@ -1,10 +1,17 @@
-#' Officiella valresultat för 2026
+#' Officiella valresultat för 2022 och 2026
 #'
-#' Läser en valtyp, en räkning och en geografisk nivå från Valmyndighetens
+#' Läser en valtyp, en räkning och en geografisk nivå för ett eller flera valår
+#' från Valmyndighetens
 #' officiella primärkälla. Ingen geografisk aggregering eller automatisk
 #' reservkälla används om den valda källan saknas.
 #'
-#' @param ar Valår. Endast 2026 stöds.
+#' @param ar Ett eller flera exakta valår, till exempel `c(2022, 2026)`, eller
+#'   `"alla"` för samtliga stödda år för vald valtyp. Dubbletter tas bort med
+#'   den först angivna årsordningen bevarad. Standard är 2026 när inga
+#'   intervallgränser anges.
+#' @param fran,till Inklusiva gränser för ett intervall bland **stödda** valår.
+#'   Används som alternativ till `ar`; `fran = 2021, till = 2026` väljer i
+#'   nuläget 2022 och 2026. Utelämnad gräns är öppen.
 #' @param val Exakt en valtyp: `"RD"`, `"RF"` eller `"KF"`. Inte `NULL`.
 #' @param rakning Exakt en räkning: `"slutlig"` (default) eller `"preliminar"`.
 #' @param niva En geografisk nivå. `NULL` ger valets huvudnivå: RD `"riket"`,
@@ -15,6 +22,17 @@
 #' RD stöder valdistrikt, kommun, kommunvalkrets, riksdagsvalkrets och riket.
 #' RF stöder valdistrikt, kommun, kommunvalkrets, region, regionvalkrets och
 #' riket. KF stöder valdistrikt, kommun, kommunvalkrets, lan och riket.
+#' Detta är 2026 års nivåer. För 2022 stöds endast de officiella D- och
+#' M-noderna, vid såväl preliminär som slutlig räkning:
+#'
+#' | Val | D: valdistrikt | M: valkrets | M: valområde |
+#' | --- | --- | --- | --- |
+#' | RD | valdistrikt | riksdagsvalkrets | riket |
+#' | RF | valdistrikt | regionvalkrets | region |
+#' | KF | valdistrikt | kommunvalkrets (där indelning finns) | kommun |
+#'
+#' Övriga 2022-nivåer stöds inte: separata U/O-summeringar finns inte i
+#' 2022 års resultatindex. Nivåer skapas inte genom egen distriktsaggregering.
 #' RD/lan stöds inte. RF/lan är dokumenterat i OS-formatet men ännu inte
 #' aktiverat, eftersom faktisk slutlig källa inte är verifierad.
 #'
@@ -38,6 +56,13 @@
 #' procentuell förändring. `valomradessparr` och `valkretssparr` följer samma
 #' 0–1-konvention. Saknade eller ej tillämpliga fält är typade `NA`.
 #' Historik och differenser bevaras endast där källan publicerar dem.
+#' 2022 års resultat-JSON saknar de flesta föregående-val- och
+#' jämförelsefälten; dessa är typade `NA`. Separata historiska
+#' jämförelsekällor är ännu inte integrerade. Källans `Val_20220911`
+#' normaliseras till `Val_2022`; saknade valdatum och andra metadata gissas
+#' inte. D-nivåns aktuella andelar använder distriktets officiella rösttal och
+#' röstberättigade. M-nivån använder mandatfilens områdes-/valkretsnoder och
+#' `antalRostberattigadeIRaknadeValdistrikt` som valdeltagandets nämnare.
 #'
 #' `antal_valdistrikt_raknade` och `antal_valdistrikt_som_ska_raknas` avser
 #' filpopulationen. Motsvarigheterna med suffix `_omrade` exponeras bara där
@@ -66,6 +91,12 @@
 #' `kommunnamn` är paketets korta analysnamn, uppslaget exakt via `kommunkod`.
 #' `kommunnamn_officiellt` bevarar Valmyndighetens benämning när källan har
 #' en sådan; den konstrueras aldrig från kortnamnet.
+#' Flera valår staplas i long format, inte i årsspecifika wide-kolumner.
+#' `valar` är en `integer`-tidsvariabel direkt efter `valtillfalle`.
+#' Exakta år i `ar` behåller angiven ordning. `"alla"` och `fran`/`till`
+#' ordnas kronologiskt. Samtliga valda år måste stödja samma begärda
+#' valtyp/räkning/nivå; ett saknat år eller en otillgänglig källa ger fel
+#' utan partiellt flerårsresultat.
 #'
 #' De geografiska kolumnerna är: valdistrikt — `valdistriktskod`,
 #' `valdistriktsnamn`, `valdistriktstyp`, `kommunkod`, `kommunnamn`,
@@ -83,28 +114,35 @@
 #' `data_dir` går före optionen `valresultat.data_dir`. Resultatsamlingen
 #' väljs med optionen `valresultat.resultatsamling_2026` (default `"val2026"`).
 #' Test-/utvecklingssamlingen `"genrep2026"` kan väljas uttryckligen.
+#' För 2022 används `"val2022"` och vid behov optionen
+#' `valresultat.resultatsamling_2022`.
 #' `source = "local"` använder aldrig nätet. Lokal arkivering kopierar endast
 #' befintliga filer; en snapshot från samma datum får ersättas.
-#' @return En tibble med ett nivåspecifikt publikt kolumnkontrakt, en geografisk
-#'   nivå och unika val-/områdes-/partinycklar. Inga mandat eller personröster
-#'   ingår. `dplyr::bind_rows()` kan användas för att skapa unionen av kolumner
-#'   från flera nivåer.
+#' @return En tibble i long format med ett nivåspecifikt publikt
+#'   kolumnkontrakt, `valar` som integer och unika val-/områdes-/partinycklar.
+#'   Inga mandat eller personröster ingår. `dplyr::bind_rows()` kan användas
+#'   för att skapa unionen av kolumner från flera nivåer.
 #' @seealso [mandat()], [valresultat-package]
 #' @examples
 #' \dontrun{
 #' valresultat(val = "RD", source = "local", data_dir = "mitt_arkiv")
 #' valresultat(val = "KF", niva = "kommun", rakning = "preliminar")
+#' valresultat(ar = c(2022, 2026), val = "RD", niva = "riket")
+#' valresultat(ar = "alla", val = "RD", niva = "riket")
+#' valresultat(fran = 2010, till = 2026, val = "RD", niva = "riket")
 #' }
 #' @export
 valresultat <- function(
     ar = 2026, val = "RD", rakning = c("slutlig", "preliminar"),
     niva = NULL, source = c("auto", "local", "remote"), data_dir = NULL,
-    update = FALSE, archive = FALSE, progress = interactive()
+    update = FALSE, archive = FALSE, progress = interactive(),
+    fran = NULL, till = NULL
 ) {
-  .check_ar_2026(ar, "valresultat")
+  ar_angivet <- !missing(ar)
   .check_text(val, "val")
   val <- toupper(val)
   if (!val %in% c("RD", "RF", "KF")) stop("Ok\u00e4nd valtyp.", call. = FALSE)
+  valar <- .resolve_valar(ar, fran, till, "valresultat", val, ar_angivet)
   if (missing(rakning)) rakning <- "slutlig"
   .check_text(rakning, "rakning")
   if (!rakning %in% c("slutlig", "preliminar")) {
@@ -112,20 +150,46 @@ valresultat <- function(
   }
   if (is.null(niva)) niva <- c(RD = "riket", RF = "region", KF = "kommun")[[val]]
   .check_text(niva, "niva")
-  kalla <- .valresultat_kalla(val, niva)
+  if (length(valar) == 1L) {
+    kallor <- .valresultat_kalla(val, niva, valar[[1]])
+  } else {
+    provning <- lapply(valar, function(ar) {
+      tryCatch(.valresultat_kalla(val, niva, ar), error = identity)
+    })
+    saknas <- vapply(provning, inherits, logical(1), "error")
+    if (any(saknas)) {
+      stop("Niv\u00e5n ", niva, " f\u00f6r ", val, "/", rakning,
+           " kan inte levereras f\u00f6r \u00e5r: ", paste(valar[saknas], collapse = ", "),
+           ". ", paste(vapply(provning[saknas], conditionMessage, ""), collapse = " "),
+           call. = FALSE)
+    }
+    kallor <- unlist(provning, use.names = FALSE)
+  }
   source <- .check_public_args(
-    ar, "valresultat", source, data_dir, update, archive, progress
+    valar[[1]], "valresultat", source, data_dir, update, archive, progress,
+    valar_resolved = TRUE
   )
-  index <- .read_resultatindex_2026(source, data_dir, update, archive)
+  purrr::map2(valar, kallor, function(ar, kalla) {
+    tryCatch(
+      .valresultat_ett_ar(ar, val, rakning, niva, kalla, source, data_dir,
+                         update, archive, progress),
+      error = function(e) stop("Val\u00e5r ", ar, ": ", conditionMessage(e), call. = FALSE)
+    )
+  }) |> purrr::list_rbind()
+}
+
+.valresultat_ett_ar <- function(ar, val, rakning, niva, kalla, source,
+                               data_dir, update, archive, progress) {
+  index <- .valresultat_index_for_ar(ar, source, data_dir, update, archive)
   paths <- .valresultat_paths(index, val, rakning, kalla)
   resultat <- purrr::map(paths, function(path) {
     tryCatch({
-      file <- .resultat_file_2026(path, source, data_dir, update, archive)
+      file <- .valresultat_file_for_ar(ar, path, source, data_dir, update, archive)
       raw <- .read_valresultat_raw(
-        file, kalla, val, rakning, distrikt_context = kalla == "D"
+        file, kalla, val, rakning, distrikt_context = kalla == "D", ar = ar
       )
       harmoniserat <- .parse_valresultat(raw, kalla, val, niva, rakning, path)
-      .valresultat_public_2026(harmoniserat, niva, raw)
+      .valresultat_public_2026(harmoniserat, niva, raw, ar = ar)
     }, error = function(e) {
       stop(path, ": ", conditionMessage(e), call. = FALSE)
     })
@@ -146,7 +210,20 @@ valresultat <- function(
   }
 }
 
-.valresultat_kalla <- function(val, niva) {
+.valresultat_kalla <- function(val, niva, ar = 2026) {
+  if (ar == 2022) {
+    matris <- list(
+      RD = c(valdistrikt = "D", riksdagsvalkrets = "M", riket = "M"),
+      RF = c(valdistrikt = "D", regionvalkrets = "M", region = "M"),
+      KF = c(valdistrikt = "D", kommunvalkrets = "M", kommun = "M")
+    )
+    kalla <- unname(matris[[val]][niva])
+    if (is.na(kalla)) {
+      stop("Niv\u00e5n ", niva, " st\u00f6ds inte f\u00f6r ", val,
+           " \u00e5r 2022: officiell resultatnod saknas.", call. = FALSE)
+    }
+    return(kalla)
+  }
   # RF/lan har en beslutad filklass men en separat aktiveringskontroll.
   matris <- list(
     RD = c(valdistrikt = "D", kommun = "U", kommunvalkrets = "U",
@@ -184,7 +261,8 @@ valresultat <- function(
   paths
 }
 
-.read_valresultat_raw <- function(file, kalla, val, rakning, distrikt_context = FALSE) {
+.read_valresultat_raw <- function(file, kalla, val, rakning,
+                                 distrikt_context = FALSE, ar = 2026) {
   if (grepl("^https?://", file)) {
     lokal <- tempfile(fileext = ".zip")
     on.exit(unlink(lokal), add = TRUE)
@@ -208,14 +286,15 @@ valresultat <- function(
   on.exit(unlink(exdir, recursive = TRUE), add = TRUE)
   utils::unzip(file, files = poster, exdir = exdir)
   raw <- jsonlite::fromJSON(file.path(exdir, poster), simplifyVector = FALSE)
+  if (ar == 2022) raw <- .normalisera_resultat_2022(raw)
   if (distrikt_context) {
     if (kalla != "D") stop("Distriktskontext kr\u00e4ver k\u00e4lltyp D.", call. = FALSE)
     context <- list(
-      mandat = .read_valresultat_raw(file, "M", val, rakning),
+      mandat = .read_valresultat_raw(file, "M", val, rakning, ar = ar),
       summering = NULL
     )
-    if (val %in% c("RD", "RF")) {
-      context$summering <- .read_valresultat_raw(file, "U", val, rakning)
+    if (ar == 2026 && val %in% c("RD", "RF")) {
+      context$summering <- .read_valresultat_raw(file, "U", val, rakning, ar = ar)
     }
     attr(raw, "valresultat_distrikt_context") <- context
   }

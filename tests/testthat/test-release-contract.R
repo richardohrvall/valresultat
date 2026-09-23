@@ -28,7 +28,9 @@ test_that("all public functions use the same basic argument validation", {
   for (fun in funs) {
     expect_error(fun(ar = "2026"), "2026")
     expect_error(fun(ar = 2026.5), "2026")
-    expect_error(fun(ar = c(2026, 2026)), "2026")
+    if (!identical(fun, valresultat)) {
+      expect_error(fun(ar = c(2026, 2026)), "2026")
+    }
     expect_error(fun(update = NA), "update")
     expect_error(fun(archive = 0), "archive")
     expect_error(fun(data_dir = c("a", "b")), "data_dir")

@@ -2,7 +2,7 @@
 % Please edit documentation in R/api_valresultat.R
 \name{valresultat}
 \alias{valresultat}
-\title{Officiella valresultat för 2026}
+\title{Officiella valresultat för 2022 och 2026}
 \usage{
 valresultat(
   ar = 2026,
@@ -13,11 +13,16 @@ valresultat(
   data_dir = NULL,
   update = FALSE,
   archive = FALSE,
-  progress = interactive()
+  progress = interactive(),
+  fran = NULL,
+  till = NULL
 )
 }
 \arguments{
-\item{ar}{Valår. Endast 2026 stöds.}
+\item{ar}{Ett eller flera exakta valår, till exempel \code{c(2022, 2026)}, eller
+\code{"alla"} för samtliga stödda år för vald valtyp. Dubbletter tas bort med
+den först angivna årsordningen bevarad. Standard är 2026 när inga
+intervallgränser anges.}
 
 \item{val}{Exakt en valtyp: \code{"RD"}, \code{"RF"} eller \code{"KF"}. Inte \code{NULL}.}
 
@@ -35,15 +40,20 @@ RF \code{"region"}, KF \code{"kommun"}. Se nivåerna nedan.}
 \item{archive}{Om \code{TRUE}, sparas även daterade snapshots.}
 
 \item{progress}{Visa progressindikator.}
+
+\item{fran, till}{Inklusiva gränser för ett intervall bland \strong{stödda} valår.
+Används som alternativ till \code{ar}; \verb{fran = 2021, till = 2026} väljer i
+nuläget 2022 och 2026. Utelämnad gräns är öppen.}
 }
 \value{
-En tibble med ett nivåspecifikt publikt kolumnkontrakt, en geografisk
-nivå och unika val-/områdes-/partinycklar. Inga mandat eller personröster
-ingår. \code{dplyr::bind_rows()} kan användas för att skapa unionen av kolumner
-från flera nivåer.
+En tibble i long format med ett nivåspecifikt publikt
+kolumnkontrakt, \code{valar} som integer och unika val-/områdes-/partinycklar.
+Inga mandat eller personröster ingår. \code{dplyr::bind_rows()} kan användas
+för att skapa unionen av kolumner från flera nivåer.
 }
 \description{
-Läser en valtyp, en räkning och en geografisk nivå från Valmyndighetens
+Läser en valtyp, en räkning och en geografisk nivå för ett eller flera valår
+från Valmyndighetens
 officiella primärkälla. Ingen geografisk aggregering eller automatisk
 reservkälla används om den valda källan saknas.
 }
@@ -51,6 +61,17 @@ reservkälla används om den valda källan saknas.
 RD stöder valdistrikt, kommun, kommunvalkrets, riksdagsvalkrets och riket.
 RF stöder valdistrikt, kommun, kommunvalkrets, region, regionvalkrets och
 riket. KF stöder valdistrikt, kommun, kommunvalkrets, lan och riket.
+Detta är 2026 års nivåer. För 2022 stöds endast de officiella D- och
+M-noderna, vid såväl preliminär som slutlig räkning:\tabular{llll}{
+   Val \tab D: valdistrikt \tab M: valkrets \tab M: valområde \cr
+   RD \tab valdistrikt \tab riksdagsvalkrets \tab riket \cr
+   RF \tab valdistrikt \tab regionvalkrets \tab region \cr
+   KF \tab valdistrikt \tab kommunvalkrets (där indelning finns) \tab kommun \cr
+}
+
+
+Övriga 2022-nivåer stöds inte: separata U/O-summeringar finns inte i
+2022 års resultatindex. Nivåer skapas inte genom egen distriktsaggregering.
 RD/lan stöds inte. RF/lan är dokumenterat i OS-formatet men ännu inte
 aktiverat, eftersom faktisk slutlig källa inte är verifierad.
 
@@ -74,6 +95,13 @@ annars. Differenser mellan andelar uttrycks på samma skala:
 procentuell förändring. \code{valomradessparr} och \code{valkretssparr} följer samma
 0–1-konvention. Saknade eller ej tillämpliga fält är typade \code{NA}.
 Historik och differenser bevaras endast där källan publicerar dem.
+2022 års resultat-JSON saknar de flesta föregående-val- och
+jämförelsefälten; dessa är typade \code{NA}. Separata historiska
+jämförelsekällor är ännu inte integrerade. Källans \code{Val_20220911}
+normaliseras till \code{Val_2022}; saknade valdatum och andra metadata gissas
+inte. D-nivåns aktuella andelar använder distriktets officiella rösttal och
+röstberättigade. M-nivån använder mandatfilens områdes-/valkretsnoder och
+\code{antalRostberattigadeIRaknadeValdistrikt} som valdeltagandets nämnare.
 
 \code{antal_valdistrikt_raknade} och \code{antal_valdistrikt_som_ska_raknas} avser
 filpopulationen. Motsvarigheterna med suffix \verb{_omrade} exponeras bara där
@@ -102,6 +130,12 @@ uttrycklig nolla i ett rapporterat resultat behålls som 0. En saknad
 \code{kommunnamn} är paketets korta analysnamn, uppslaget exakt via \code{kommunkod}.
 \code{kommunnamn_officiellt} bevarar Valmyndighetens benämning när källan har
 en sådan; den konstrueras aldrig från kortnamnet.
+Flera valår staplas i long format, inte i årsspecifika wide-kolumner.
+\code{valar} är en \code{integer}-tidsvariabel direkt efter \code{valtillfalle}.
+Exakta år i \code{ar} behåller angiven ordning. \code{"alla"} och \code{fran}/\code{till}
+ordnas kronologiskt. Samtliga valda år måste stödja samma begärda
+valtyp/räkning/nivå; ett saknat år eller en otillgänglig källa ger fel
+utan partiellt flerårsresultat.
 
 De geografiska kolumnerna är: valdistrikt — \code{valdistriktskod},
 \code{valdistriktsnamn}, \code{valdistriktstyp}, \code{kommunkod}, \code{kommunnamn},
@@ -119,6 +153,8 @@ inga ytterligare geografiska kolumner. \code{geografiniva} finns alltid.
 \code{data_dir} går före optionen \code{valresultat.data_dir}. Resultatsamlingen
 väljs med optionen \code{valresultat.resultatsamling_2026} (default \code{"val2026"}).
 Test-/utvecklingssamlingen \code{"genrep2026"} kan väljas uttryckligen.
+För 2022 används \code{"val2022"} och vid behov optionen
+\code{valresultat.resultatsamling_2022}.
 \code{source = "local"} använder aldrig nätet. Lokal arkivering kopierar endast
 befintliga filer; en snapshot från samma datum får ersättas.
 }
@@ -126,6 +162,9 @@ befintliga filer; en snapshot från samma datum får ersättas.
 \dontrun{
 valresultat(val = "RD", source = "local", data_dir = "mitt_arkiv")
 valresultat(val = "KF", niva = "kommun", rakning = "preliminar")
+valresultat(ar = c(2022, 2026), val = "RD", niva = "riket")
+valresultat(ar = "alla", val = "RD", niva = "riket")
+valresultat(fran = 2010, till = 2026, val = "RD", niva = "riket")
 }
 }
 \seealso{
