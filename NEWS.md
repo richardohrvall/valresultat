@@ -1,5 +1,11 @@
 # valresultat 0.3.0.9000
 
+* Adds official 2022 mandate results for RD, RF and KF at election-area and
+  constituency levels where present. `mandat()` uses the shared exact-year,
+  `"alla"` and `fran`/`till` selection, returns years in long format, and adds
+  integer `valar` after `valtillfalle`. Missing historical comparisons remain
+  `NA`; final 2022 empty seats are derived only from complete mandate and
+  elected-member data in the same result node.
 * `valresultat()` now accepts exact year vectors, `ar = "alla"`, and inclusive
   `fran`/`till` ranges over supported election years. Multi-year results are
   returned in long format with integer `valar` directly after `valtillfalle`.

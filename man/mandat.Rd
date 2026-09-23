@@ -13,11 +13,15 @@ mandat(
   data_dir = NULL,
   update = FALSE,
   archive = FALSE,
-  progress = interactive()
+  progress = interactive(),
+  fran = NULL,
+  till = NULL
 )
 }
 \arguments{
-\item{ar}{Valår. För närvarande stöds 2026.}
+\item{ar}{Ett eller flera exakta valår (2022, 2026), eller \code{"alla"}.
+Dubbletter tas bort med den första årsordningen bevarad. Utan årsurval
+används 2026.}
 
 \item{val}{En eller flera valtyper: \code{"RD"}, \code{"RF"} eller \code{"KF"}.
 \code{NULL} ger alla.}
@@ -37,13 +41,22 @@ mandat(
 \item{archive}{Om \code{TRUE}, sparas även daterade snapshots.}
 
 \item{progress}{Visa progressindikator.}
+
+\item{fran, till}{Inklusiva gränser bland stödda valår, som alternativ till
+\code{ar}. En utelämnad gräns är öppen.}
 }
 \value{
 En tibble där en rad avser val, räkning, geografisk nivå och
 område samt parti. Områdestotaler upprepas på partirader och nivåerna
 ska inte summeras tillsammans. Saknade totalsummor är \code{NA} när någon
 mandatkomponent är okänd. \code{antal_tomma_stolar} är \code{NA} utan verifierat
-underlag och explicit noll bevaras.
+underlag och explicit noll bevaras. För slutlig 2022 härleds tomma stolar
+endast där samma fullständigt räknade resultatnod innehåller både mandat
+och kompletta valda ledamöter; annars \code{NA}. Preliminära 2022-resultat
+får \code{NA} för tomma stolar. Historiska mandat- och jämförelsefält som
+saknas i 2022 års JSON är typade \code{NA}; 2018-data rekonstrueras inte.
+\code{valar} är en heltalskolumn direkt efter \code{valtillfalle}. Flera år staplas
+i long format. \code{"alla"} och \code{fran}/\code{till} ger stigande årsordning.
 \code{valomradessparr} och \code{valkretssparr} är proportioner på 0–1-skalan.
 För KF är \code{valomradesnamn} paketets korta kommunnamn, uppslaget via
 \code{valomradeskod}; separata kommunfält dupliceras inte.
@@ -52,7 +65,12 @@ För KF är \code{valomradesnamn} paketets korta kommunnamn, uppslaget via
 Hämtar mandatfördelningen.
 }
 \examples{
-\dontrun{mandat(val = "RD", source = "local", data_dir = "mitt_arkiv")}
+\dontrun{
+mandat(val = "RD", source = "local", data_dir = "mitt_arkiv")
+mandat(ar = c(2022, 2026), val = "RD", niva = "riket")
+mandat(ar = "alla", val = "RF", niva = "region")
+mandat(fran = 2022, till = 2026, val = "KF", niva = "kommun")
+}
 }
 \seealso{
 \code{\link[=valda]{valda()}}, \code{\link[=ersattare]{ersattare()}}, \link{valresultat-package}

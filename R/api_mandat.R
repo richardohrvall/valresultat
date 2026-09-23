@@ -29,20 +29,25 @@
   )
 }
 
-.mandat_public_2026 <- function(data) {
+.mandat_public_2026 <- function(data, ar = 2026L) {
   data <- .publika_andelar_0_1_2026(
     data, c("valomradessparr_procent", "valkretssparr_procent")
   )
   names(data)[names(data) == "valomradessparr_procent"] <- "valomradessparr"
   names(data)[names(data) == "valkretssparr_procent"] <- "valkretssparr"
-  data
+  data |>
+    dplyr::mutate(valar = as.integer(ar), .after = valtillfalle)
 }
 
 #' Mandat
 #'
 #' Hämtar mandatfördelningen.
 #'
-#' @param ar Valår. För närvarande stöds 2026.
+#' @param ar Ett eller flera exakta valår (2022, 2026), eller `"alla"`.
+#'   Dubbletter tas bort med den första årsordningen bevarad. Utan årsurval
+#'   används 2026.
+#' @param fran,till Inklusiva gränser bland stödda valår, som alternativ till
+#'   `ar`. En utelämnad gräns är öppen.
 #' @param val En eller flera valtyper: `"RD"`, `"RF"` eller `"KF"`.
 #'   `NULL` ger alla.
 #' @param rakning Exakt en räkning: `"slutlig"` eller `"preliminar"`.
@@ -58,12 +63,23 @@
 #'   område samt parti. Områdestotaler upprepas på partirader och nivåerna
 #'   ska inte summeras tillsammans. Saknade totalsummor är `NA` när någon
 #'   mandatkomponent är okänd. `antal_tomma_stolar` är `NA` utan verifierat
-#'   underlag och explicit noll bevaras.
+#'   underlag och explicit noll bevaras. För slutlig 2022 härleds tomma stolar
+#'   endast där samma fullständigt räknade resultatnod innehåller både mandat
+#'   och kompletta valda ledamöter; annars `NA`. Preliminära 2022-resultat
+#'   får `NA` för tomma stolar. Historiska mandat- och jämförelsefält som
+#'   saknas i 2022 års JSON är typade `NA`; 2018-data rekonstrueras inte.
+#'   `valar` är en heltalskolumn direkt efter `valtillfalle`. Flera år staplas
+#'   i long format. `"alla"` och `fran`/`till` ger stigande årsordning.
 #'   `valomradessparr` och `valkretssparr` är proportioner på 0–1-skalan.
 #'   För KF är `valomradesnamn` paketets korta kommunnamn, uppslaget via
 #'   `valomradeskod`; separata kommunfält dupliceras inte.
 #' @examples
-#' \dontrun{mandat(val = "RD", source = "local", data_dir = "mitt_arkiv")}
+#' \dontrun{
+#' mandat(val = "RD", source = "local", data_dir = "mitt_arkiv")
+#' mandat(ar = c(2022, 2026), val = "RD", niva = "riket")
+#' mandat(ar = "alla", val = "RF", niva = "region")
+#' mandat(fran = 2022, till = 2026, val = "KF", niva = "kommun")
+#' }
 #' @seealso [valda()], [ersattare()], [valresultat-package]
 #' @export
 mandat <- function(
@@ -75,12 +91,11 @@ mandat <- function(
     data_dir = NULL,
     update = FALSE,
     archive = FALSE,
-    progress = interactive()
+    progress = interactive(),
+    fran = NULL,
+    till = NULL
 ) {
-
-  source <- .check_public_args(
-    ar, "mandat", source, data_dir, update, archive, progress
-  )
+  ar_angivet <- !missing(ar)
   if (missing(rakning)) rakning <- "slutlig"
   .check_text(rakning, "rakning")
   if (!rakning %in% c("slutlig", "preliminar")) {
@@ -89,13 +104,27 @@ mandat <- function(
   val <- .valtyper(val)
   par <- .mandat_par_2026(val, niva)
   val <- unique(par$valtyp)
-
-  index <- .read_resultatindex_2026(
-    source = source,
-    data_dir = data_dir,
-    update = update,
-    archive = archive
+  valar <- .resolve_valar(ar, fran, till, "mandat", val[[1]], ar_angivet)
+  if (length(val) > 1L && !all(vapply(val[-1], function(v) {
+    all(valar %in% .stodd_valar("mandat", v))
+  }, logical(1)))) stop("Valda \u00e5r st\u00f6ds inte f\u00f6r alla valtyper.", call. = FALSE)
+  source <- .check_public_args(
+    valar[[1]], "mandat", source, data_dir, update, archive, progress,
+    valar_resolved = TRUE
   )
+  purrr::map(valar, function(valar_ett) {
+    tryCatch(
+      .mandat_ett_ar(valar_ett, val, rakning, par, source, data_dir,
+                     update, archive, progress),
+      error = function(e) stop("Val\u00e5r ", valar_ett, ": ", conditionMessage(e),
+                               call. = FALSE)
+    )
+  }) |> purrr::list_rbind()
+}
+
+.mandat_ett_ar <- function(ar, val, rakning, par, source, data_dir,
+                           update, archive, progress) {
+  index <- .valresultat_index_for_ar(ar, source, data_dir, update, archive)
 
   prefix <- dplyr::recode_values(
     rakning,
@@ -139,16 +168,17 @@ mandat <- function(
     paths$path,
     \(path) {
 
-      file <- .resultat_file_2026(
-        path = path, source = source, data_dir = data_dir,
-        update = update, archive = archive
+      file <- .valresultat_file_for_ar(
+        ar, path, source, data_dir, update, archive
       )
-
-      raw <- read_raw_json_zip_2026(
-        file,
-        type = "mandatfordelning"
-      )
-      raw <- .normalisera_rakningsmetadata_2026(raw)
+      raw <- if (ar == 2022L) {
+        .read_valresultat_raw(file, "M", paths$valtyp[[match(path, paths$path)]],
+                             rakning, ar = ar)
+      } else {
+        .normalisera_rakningsmetadata_2026(
+          read_raw_json_zip_2026(file, type = "mandatfordelning")
+        )
+      }
 
       if (!identical(as_chr_na(raw$valtyp), paths$valtyp[[match(path, paths$path)]]) ||
           !identical(.normalisera_rakningstillfalle_2026(raw$rakningstillfalle), rakning)) {
@@ -157,7 +187,11 @@ mandat <- function(
 
       mandat_data <- parse_mandat_2026(raw)
 
-      tomma_stolar <- parse_tomma_stolar_2026(raw)
+      tomma_stolar <- if (ar == 2022L) {
+        parse_tomma_stolar_2022(raw)
+      } else {
+        parse_tomma_stolar_2026(raw)
+      }
 
       if (nrow(tomma_stolar) > 0) {
         mandat_data <- mandat_data |>
@@ -190,7 +224,7 @@ mandat <- function(
     parsed
   )
   parsed <- .kort_kommunnamn_2026(parsed)
-  parsed <- .mandat_public_2026(parsed)
+  parsed <- .mandat_public_2026(parsed, ar)
   nyckel <- c("valtillfalle", "valtyp", "rakningstillfalle", "geografiniva",
               "valomradeskod", "valkretskod", "partikod")
   obligatoriska <- setdiff(nyckel, "valkretskod")

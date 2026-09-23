@@ -45,8 +45,8 @@ library(valresultat)
 | `ersattare()` | Substitute relationships for elected representatives |
 
 Most functions currently target the 2026 parliamentary (`RD`), regional (`RF`)
-and municipal (`KF`) elections. `valresultat()` also supports selected official
-2022 result levels.
+and municipal (`KF`) elections. `valresultat()` and `mandat()` also support
+selected official 2022 result levels.
 
 ## Quick start
 
@@ -103,6 +103,11 @@ valresultat(ar = 2026, val = "RD", niva = "riket")
 valresultat(ar = c(2022, 2026), val = "RD", niva = "riket")
 valresultat(ar = "alla", val = "RD", niva = "riket")
 valresultat(fran = 2010, till = 2026, val = "RD", niva = "riket")
+
+# Mandates for the same years, stacked with integer valar
+mandat(ar = c(2022, 2026), val = "RD", niva = "riket")
+mandat(ar = "alla", val = "RF", niva = "region")
+mandat(fran = 2022, till = 2026, val = "KF", niva = "kommun")
 ```
 
 Exact years retain the order supplied in `ar`; `"alla"` and ranges are
@@ -284,7 +289,14 @@ official national result. Other 2022 levels are unavailable because the
 separate U/O summaries used in 2026 are absent from the 2022 result index.
 The 2022 result JSON does not contain most previous-election comparisons, so
 those columns are `NA`; the separate historical comparison files are not yet
-integrated. Other public functions remain 2026-only.
+integrated. `mandat(ar = 2022)` reads the official mandate nodes for RD
+(`riket`, `riksdagsvalkrets`), RF (`region`, `regionvalkrets`) and KF
+(`kommun`, `kommunvalkrets` where divided). It supports preliminary and final
+files when mandate results are present. Historical mandate comparisons are
+`NA`. In final results, `antal_tomma_stolar` is derived only where the same
+fully counted node contains both party mandates and complete elected-member
+data; otherwise it is `NA`. Candidate and personal-vote functions remain
+2026-only.
 
 ## Status
 

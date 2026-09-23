@@ -12,7 +12,7 @@ test_that("shared year resolver distinguishes exact years, all and inclusive ran
   expect_identical(.stodd_valar("valresultat", "RD"), c(2022L, 2026L))
   expect_identical(.stodd_valar("valresultat", "RF"), c(2022L, 2026L))
   expect_identical(.stodd_valar("valresultat", "KF"), c(2022L, 2026L))
-  expect_identical(.stodd_valar("mandat", "RD"), 2026L)
+  expect_identical(.stodd_valar("mandat", "RD"), c(2022L, 2026L))
   expect_identical(.resolve_valar(2026L), 2026L)
   expect_identical(.resolve_valar(c(2026, 2022, 2026)), c(2026L, 2022L))
   expect_identical(.resolve_valar("alla"), c(2022L, 2026L))
