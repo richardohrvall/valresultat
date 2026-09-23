@@ -1,3 +1,19 @@
+# valresultat 0.3.0.9000
+
+* Extends `personroster()` with independent geographic, ballot-list and
+  verified-zero controls. District and list views are sparse by default;
+  `komplettera_nollor = TRUE` adds verified zeros. Its established default
+  area result keeps the full candidate population, and official area-level
+  list totals are checked against districts.
+* Corrects an overly cautious personal-vote availability rule in 0.2.0 that
+  could return `NA` even when a vote count was verifiable from complete final
+  results. Official qualified-candidate counts retain priority; reconciled
+  area summaries and lists provide other observed counts and verified zeros.
+* Keeps incomplete final-path and preliminary material unknown where votes
+  cannot yet be established. Sparse list views retain observed rows, while
+  completed views add zeros only after the source material is fully reconciled.
+* Candidate personal-vote totals now use the corrected area results.
+
 # valresultat 0.2.0
 
 * Standardizes public vote shares, turnout rates, share differences and mandate

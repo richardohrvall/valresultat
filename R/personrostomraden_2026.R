@@ -344,6 +344,18 @@
   underlag <- .personrostomradesunderlag_2026(
     rost_raw, valomradeskod, omraden
   )
+  avstamda <- .personrostomraden_avstamda_2026(rost_raw, omraden)
+  summerade_omrade <- .personroster_summerade_omrade_2026(omraden)
+  listsummerade <- tibble::tibble(
+    personvalsomradeskod = character(), partikod = character(),
+    kandidatnummer = character(), antal_personroster_listor = integer())
+  if (any(avstamda)) {
+    listsummerade <- .personroster_mandatlistor_2026(omraden)$roster |>
+      dplyr::summarise(
+        antal_personroster_listor = as.integer(sum(antal_personroster_lista)),
+        .by = c(personvalsomradeskod, partikod, kandidatnummer)
+      )
+  }
   partiroster <- .personval_partiroster_2026(omraden)
   officiella <- .personval_officiella_2026(omraden)
   okanda_officiella <- officiella |>
@@ -400,6 +412,16 @@
       relationship = "one-to-one"
     ) |>
     dplyr::left_join(
+      summerade_omrade,
+      by = dplyr::join_by(personvalsomradeskod, partikod, kandidatnummer),
+      relationship = "one-to-one"
+    ) |>
+    dplyr::left_join(
+      listsummerade,
+      by = dplyr::join_by(personvalsomradeskod, partikod, kandidatnummer),
+      relationship = "one-to-one"
+    ) |>
+    dplyr::left_join(
       partiroster,
       by = dplyr::join_by(personvalsomradeskod, partikod),
       relationship = "many-to-one"
@@ -425,6 +447,16 @@
       call. = FALSE
     )
   }
+  motsagelse_omrade <- out |>
+    dplyr::filter(
+      avstamda[match(personvalsomradeskod, names(avstamda))] %in% TRUE,
+      .officiell_rad %in% TRUE, !is.na(antal_personroster_omrade),
+      antal_personroster_officiellt != antal_personroster_omrade
+    )
+  if (nrow(motsagelse_omrade)) {
+    stop("Officiellt personr\u00f6stetal st\u00e4mmer inte med omr\u00e5dets summerade personr\u00f6ster.",
+         call. = FALSE)
+  }
 
   andelsfel <- out |>
     dplyr::filter(
@@ -447,6 +479,11 @@
     dplyr::mutate(
       antal_personroster = dplyr::case_when(
         .officiell_rad %in% TRUE ~ antal_personroster_officiellt,
+        avstamda[match(personvalsomradeskod, names(avstamda))] %in% TRUE &
+          !is.na(antal_personroster_omrade) ~ antal_personroster_omrade,
+        avstamda[match(personvalsomradeskod, names(avstamda))] %in% TRUE &
+          !is.na(antal_personroster_listor) ~ antal_personroster_listor,
+        avstamda[match(personvalsomradeskod, names(avstamda))] %in% TRUE ~ 0L,
         personroster_available %in% TRUE ~
           dplyr::coalesce(antal_personroster_summerat, 0L),
         .default = NA_integer_

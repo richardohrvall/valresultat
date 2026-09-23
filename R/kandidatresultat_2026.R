@@ -139,7 +139,10 @@
     source = c("auto", "local", "remote"),
     data_dir = NULL,
     update = FALSE,
-    archive = FALSE
+    archive = FALSE,
+    personroster_niva = "personvalsomrade",
+    personroster_per_lista = FALSE,
+    personroster_komplettera_nollor = FALSE
 ) {
 
   source <- match.arg(source)
@@ -168,12 +171,21 @@
   valomradeskod <- as_chr_na(mandat_raw$valomrade$kod)
   valomradesnamn <- as_chr_na(mandat_raw$valomrade$namn)
 
-  personrostomraden <- .personrostomraden_2026(
-    kandidaturer = kandidaturer,
-    kandidater = kandidater,
-    rost_raw = rost_raw,
-    mandat_raw = mandat_raw
-  )
+  personrostomraden <- if (personroster_niva == "personvalsomrade" &&
+                           !personroster_per_lista) {
+    .personrostomraden_2026(
+      kandidaturer = kandidaturer, kandidater = kandidater,
+      rost_raw = rost_raw, mandat_raw = mandat_raw
+    )
+  } else NULL
+  personroster_utokad <- if (personroster_niva == "personvalsomrade" &&
+                           !personroster_per_lista) NULL else {
+    .personroster_utokad_2026(
+      kandidaturer, kandidater, rost_raw, mandat_raw,
+      personroster_niva, personroster_per_lista,
+      personroster_komplettera_nollor
+    )
+  }
 
   list(
     status = tibble::tibble(
@@ -184,6 +196,7 @@
       personval_available = attr(personval, "personval_available", exact = TRUE)
     ),
     personrostomraden = personrostomraden,
+    personroster_utokad = personroster_utokad,
     personval = personval,
     valda = valda_data$valda
   )
@@ -198,7 +211,10 @@
     data_dir = NULL,
     update = FALSE,
     archive = FALSE,
-    progress = interactive()
+    progress = interactive(),
+    personroster_niva = "personvalsomrade",
+    personroster_per_lista = FALSE,
+    personroster_komplettera_nollor = FALSE
 ) {
   source <- match.arg(source)
   index <- .read_resultatindex_2026(
@@ -222,7 +238,10 @@
       source = source,
       data_dir = data_dir,
       update = update,
-      archive = archive
+      archive = archive,
+      personroster_niva = personroster_niva,
+      personroster_per_lista = personroster_per_lista,
+      personroster_komplettera_nollor = personroster_komplettera_nollor
     ),
     .progress = progress
   )

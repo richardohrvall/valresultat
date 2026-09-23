@@ -2,7 +2,7 @@
 % Please edit documentation in R/api_personroster.R
 \name{personroster}
 \alias{personroster}
-\title{Personröster per personvalsområde}
+\title{Personröster per personvalsområde eller valdistrikt}
 \usage{
 personroster(
   ar = 2026,
@@ -11,7 +11,10 @@ personroster(
   data_dir = NULL,
   update = FALSE,
   archive = FALSE,
-  progress = interactive()
+  progress = interactive(),
+  niva = "personvalsomrade",
+  per_lista = FALSE,
+  komplettera_nollor = FALSE
 )
 }
 \arguments{
@@ -30,12 +33,22 @@ personroster(
 \item{archive}{Om \code{TRUE}, sparas även daterade snapshots.}
 
 \item{progress}{Visa progressindikator vid läsning av resultatfiler.}
+
+\item{niva}{\code{"personvalsomrade"} (standard) eller \code{"valdistrikt"}.}
+
+\item{per_lista}{Om \code{TRUE}, behåll listdimensionen. Standard är \code{FALSE}.}
+
+\item{komplettera_nollor}{Om \code{TRUE}, komplettera glesa distrikts- och
+listvyer med verifierade nollrader. För standardvyn på personvalsområdesnivå
+utan lista ändras inte resultatet. Standard är \code{FALSE}.}
 }
 \value{
-En tibble med en rad per kandidat, parti och personvalsområde.
-Den unika nyckeln består av \code{valtillfalle}, \code{valtyp}, \code{geografiniva},
-\code{valomradeskod}, \code{personvalsomradeskod}, \code{partikod} och
-\code{kandidatnummer}. \code{antal_partiroster} är partiets officiella
+En tibble med en rad per giltig kandidat, parti och
+personvalsområde som standard. Nyckeln innehåller \code{valtillfalle},
+\code{valtyp}, \code{valomradeskod}, \code{personvalsomradeskod}, \code{partikod} och
+\code{kandidatnummer}, samt \code{valdistriktskod} och \code{valdistriktstyp} på
+distriktsnivå och \code{listnummer} när \code{per_lista = TRUE}.
+\code{antal_partiroster} är partiets officiella
 mandatpåverkande röstetal i samma område. \code{andel_personroster} är den
 orundade proportionen \code{antal_personroster / antal_partiroster} på
 0–1-skalan. \code{kvalificerad_personval} är \code{FALSE} endast när en komplett
@@ -44,6 +57,17 @@ saknad eller oklar information.
 För KF är \code{valomradesnamn} ett kort kommunnamn. I en odelad kommun är
 även \code{personvalsomradesnamn} samma kortnamn; i en valkretsindelad kommun
 identifierar det i stället kommunvalkretsen.
+På distriktsnivå tillkommer distrikts-, kommun- och länsgeografi.
+När \code{per_lista = TRUE} tillkommer \code{listnummer} (kort format från
+kandidaturfilen), \code{antal_listroster} och \code{andel_personroster_lista}.
+De två andelarna är orundade proportioner på 0–1-skalan: kandidatens
+personröster dividerade med partiets respektive listans röster på samma
+geografiska nivå. En okänd eller nollstor nämnare ger \code{NA_real_}.
+\code{kvalificerad_personval} avser alltid det överordnade personvalsområdet.
+En explicit källnolla bevaras även i en gles vy. En kompletterad nolla
+kräver komplett listunderlag eller ett fullständigt avstämt slutresultat.
+Partiellt eller oklart underlag ger \code{NA} när raden i övrigt finns;
+oobserverade resultat har ingen rad i en gles vy.
 }
 \description{
 Skapar en analysvänlig tabell med personröster för giltiga kandidaturer.
@@ -55,14 +79,39 @@ personvalet avgörs: riksdagsvalkrets, region eller regionvalkrets, eller
 kommun eller kommunvalkrets.
 
 Ett officiellt personröstetal i en komplett personvalslista används i
-första hand. För övriga kandidater används distriktsvisa summerade
-personröster endast när hela partiets underlag i personvalsområdet är
-verifierat komplett. Verifierad frånvaro ger 0; saknat, partiellt eller
-oklart underlag ger \code{NA}.
+första hand. Därefter används observerade områdessummeringar eller
+avstämda list- och distriktsresultat. Frånvaro ger 0 först när hela
+personvalsområdets relevanta röstmaterial är färdigräknat och avstämt.
+\code{NA} betyder att källmaterialet inte räcker för att fastställa värdet,
+inte enbart att kandidaten saknas i en gles personröstarray.
+
+\code{niva} väljer personvalsområde eller valdistrikt och \code{per_lista} avgör om
+listdimensionen behålls. På distriktsnivå och i listvyerna är tabellen
+gles som standard: endast observerade personröstrader ingår. En saknad rad
+betyder inte automatiskt noll röster. Med \code{komplettera_nollor = TRUE} läggs
+kandidatkombinationer med verifierat nollresultat till. Det etablerade
+standardanropet på personvalsområdesnivå utan lista har redan sin fulla
+kandidatpopulation; där är resultatet identiskt för båda värdena på
+\code{komplettera_nollor}.
+
+På distriktsnivå kräver en kompletterad nolla en giltig kandidatur på en
+lista som faktiskt observerats i distriktet och ett komplett validerat
+personröstunderlag. En saknad listnod ger aldrig en nolla. De kompletterade
+tabellerna kan vara stora: slutlig RD 2026 ger cirka 3,84 miljoner rader
+utan lista och 4,18 miljoner med lista. Råa listsummeringar valideras
+innan ogiltiga kandidaturer filtreras bort.
+
+\code{per_lista = TRUE} visar från vilken lista kandidatens personröster kom.
+\verb{*-90000} är en kandidatfri partiröstkategori och korsas inte med
+kandidaturer. En saknad listnod kan ge 0 liströster i ett fullständigt
+avstämt slutresultat, men ger inte 0 under pågående räkning. Om
+personröstunderlaget är ofullständigt används \code{NA}, inte en gissad nolla.
 }
 \examples{
 \dontrun{
 personroster(val = "RD", source = "local", data_dir = "mitt_arkiv")
+personroster(val = "RD", per_lista = TRUE) |>
+  dplyr::select(kandidatnummer, listnummer, antal_personroster)
 }
 }
 \seealso{

@@ -172,11 +172,26 @@ Candidate-result information is included when the corresponding final result dat
 
 `personroster()` returns one row per candidate, party and actual personal-vote
 area. Its `andel_personroster` is an unrounded proportion on the 0–1 scale.
-Verified absence in complete source data is 0, while missing, partial or unclear
-personal-vote material is represented by `NA`. The final RD 2026 source has
-been checked against current live data. RF and KF currently have structural
-fixture and rehearsal coverage and require renewed integration checks against
-their final live files.
+`niva` selects the personal-vote area or voting district; `per_lista = TRUE`
+keeps the ballot-list dimension. District and list views are sparse by default:
+they contain observed candidate results, including any explicit source zeros.
+A missing row must not be read as zero. Set `komplettera_nollor = TRUE` to add
+candidate combinations with verified zeros from complete observed lists or
+fully reconciled final area results.
+The established default area view is unchanged by this option.
+
+```r
+personroster(val = "RD", niva = "valdistrikt", per_lista = TRUE) |>
+  dplyr::select(kandidatnummer, listnummer, valdistriktskod, antal_personroster)
+```
+
+The sparse list view shows how a candidate's observed personal votes are
+distributed across ballot lists. Completed district views can be large: final
+RD 2026 gives roughly 3.84 million rows without list detail and 4.18 million
+with it (about 0.9 GB). `NA` means the source material cannot establish the
+vote count; absence from a sparse candidate array alone is not enough. Final
+RD has been checked against live data; published final
+RF/KF files were still partly counted at verification.
 
 ## Data access
 

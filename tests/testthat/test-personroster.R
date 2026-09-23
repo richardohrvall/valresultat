@@ -82,6 +82,9 @@ test_that("person vote areas have the fixed public schema, key and 0-1 shares", 
     names(out),
     readLines(test_path("fixtures", "personroster-public-columns.txt"))
   )
+  expect_identical(unname(vapply(out, typeof, "")), c(
+    rep("character", 14L), "integer", "integer", "double",
+    "logical", "character", "character", "logical"))
   key <- c("valtillfalle", "valtyp", "geografiniva", "valomradeskod",
            "personvalsomradeskod", "partikod", "kandidatnummer")
   expect_equal(nrow(dplyr::distinct(out, dplyr::across(dplyr::all_of(key)))), nrow(out))
@@ -212,4 +215,6 @@ test_that("public personroster returns the shared area table", {
     }
   )
   expect_identical(personroster(val = "RD", progress = FALSE), expected)
+  expect_identical(personroster(val = "RD", komplettera_nollor = TRUE,
+                               progress = FALSE), expected)
 })
