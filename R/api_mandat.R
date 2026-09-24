@@ -63,10 +63,13 @@
 #'   område samt parti. Områdestotaler upprepas på partirader och nivåerna
 #'   ska inte summeras tillsammans. Saknade totalsummor är `NA` när någon
 #'   mandatkomponent är okänd. `antal_tomma_stolar` är `NA` utan verifierat
-#'   underlag och explicit noll bevaras. För slutlig 2022 härleds tomma stolar
-#'   endast där samma fullständigt räknade resultatnod innehåller både mandat
-#'   och kompletta valda ledamöter; annars `NA`. Preliminära 2022-resultat
-#'   får `NA` för tomma stolar. Historiska mandat- och jämförelsefält som
+#'   underlag och explicit noll bevaras. För slutlig 2022 beräknas tomma stolar
+#'   som partiets mandat minus unika valda ordinarie ledamöter. Valmyndighetens
+#'   platsmarkör `"Kunde inte utses"` räknas inte som person och används som
+#'   kontroll av fullständiga valda-listor. I valkretsindelade områden används
+#'   kompletta valkretsuppgifter för valområdets differens;
+#'   valområdet; annars används `NA`. Preliminära 2022-resultat får `NA` för
+#'   tomma stolar. Historiska mandat- och jämförelsefält som
 #'   saknas i 2022 års JSON är typade `NA`; 2018-data rekonstrueras inte.
 #'   `valar` är en heltalskolumn direkt efter `valtillfalle`. Flera år staplas
 #'   i long format. `"alla"` och `fran`/`till` ger stigande årsordning.

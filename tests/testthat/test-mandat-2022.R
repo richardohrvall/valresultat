@@ -41,38 +41,93 @@ test_that("2022 mandate totals and historical missingness are typed", {
   expect_false(any(parse_mandat_2026(raw)$geografiniva == "riket"))
 })
 
-test_that("2022 empty chairs require complete elected members in the same node", {
+test_that("2022 vacancy markers differ from elected people and incomplete data", {
   raw <- mandat_2022_fixture()
+  expect_equal(nrow(parse_tomma_stolar_2022(raw)), 0L)
+  elected <- raw$valomrade$valkretsLista[[1]]$valda$partiLedamoterLista[[1]]
+  elected$ledamoter[[2]] <- list(kandidatnummer = 0L, invalsordning = 0L,
+                                namn = "Kunde inte utses", valgrundId = 0L)
+  raw$valomrade$valkretsLista[[1]]$valda$partiLedamoterLista[[1]] <- elected
   out <- parse_tomma_stolar_2022(raw)
-  expect_identical(out$geografiniva, "riksdagsvalkrets")
-  expect_identical(out$antal_tomma_stolar, 1L)
-  raw$valomrade$valkretsLista[[1]]$valda$partiLedamoterLista[[1]]$ledamoter[[2]] <-
-    list(kandidatnummer = "2")
-  expect_identical(parse_tomma_stolar_2022(raw)$antal_tomma_stolar, 0L)
+  expect_identical(out$geografiniva, c("riket", "riksdagsvalkrets"))
+  expect_identical(out$antal_tomma_stolar, c(1L, 1L))
+  elected$ledamoter[[2]] <- list(kandidatnummer = "2", namn = "Vald person")
+  raw$valomrade$valkretsLista[[1]]$valda$partiLedamoterLista[[1]] <- elected
+  expect_identical(parse_tomma_stolar_2022(raw)$antal_tomma_stolar, c(0L, 0L))
   raw$valomrade$valkretsLista[[1]]$antalValdistriktRaknade <- 0L
   expect_equal(nrow(parse_tomma_stolar_2022(raw)), 0L)
   raw$valomrade$valkretsLista[[1]]$antalValdistriktRaknade <- 1L
-  raw$valomrade$valkretsLista[[1]]$valda$partiLedamoterLista[[1]]$ledamoter[[3]] <-
-    list(kandidatnummer = "3")
+  elected$ledamoter[[3]] <- list(kandidatnummer = "3")
+  raw$valomrade$valkretsLista[[1]]$valda$partiLedamoterLista[[1]] <- elected
   expect_error(parse_tomma_stolar_2022(raw), "verstiger")
+  elected$ledamoter <- list(elected$ledamoter[[1]],
+                            list(kandidatnummer = 0L, namn = "Fel markör"))
+  raw$valomrade$valkretsLista[[1]]$valda$partiLedamoterLista[[1]] <- elected
+  expect_error(parse_tomma_stolar_2022(raw), "Motstridig platsmark")
   raw$rakningstillfalle <- "preliminar"
   expect_equal(nrow(parse_tomma_stolar_2022(raw)), 0L)
 })
 
-test_that("mandates minus distinct elected reproduce explicit 2026 empty chairs", {
-  raw <- mandat_2022_fixture()
-  raw$valtillfalle <- "Val_2026"
-  elected <- raw$valomrade$valkretsLista[[1]]$valda$partiLedamoterLista[[1]]
-  elected$antalTommaStolar <- 1L
-  raw$valomrade$valkretsLista[[1]]$valda$partiLedamoterLista[[1]] <- elected
-  explicit <- parse_tomma_stolar_2026(raw)
-  derived <- parse_tomma_stolar_2022(raw)
-  expect_identical(derived$antal_tomma_stolar, explicit$antal_tomma_stolar)
-  elected$ledamoter[[2]] <- list(kandidatnummer = "2")
-  elected$antalTommaStolar <- 0L
-  raw$valomrade$valkretsLista[[1]]$valda$partiLedamoterLista[[1]] <- elected
-  expect_identical(parse_tomma_stolar_2022(raw)$antal_tomma_stolar,
-                   parse_tomma_stolar_2026(raw)$antal_tomma_stolar)
+test_that("2022 municipality vacancies sum complete constituency markers", {
+  raw <- mandat_2022_fixture("KF")
+  raw$valomrade$kod <- "2284"
+  vk <- raw$valomrade$valkretsLista[[1]]
+  vk$kod <- "228401"
+  vk$mandatfordelning$partiLista[[1]]$antalMandat <- 1L
+  vk$valda$partiLedamoterLista[[1]]$ledamoter <-
+    list(list(kandidatnummer = 0L, namn = "Kunde inte utses"))
+  other <- vk
+  other$kod <- "228402"
+  other$valda$partiLedamoterLista[[1]]$ledamoter <-
+    list(list(kandidatnummer = "1", namn = "Vald person"))
+  raw$valomrade$valkretsLista <- list(vk, other)
+  out <- parse_tomma_stolar_2022(raw)
+  expect_identical(out$antal_tomma_stolar, c(1L, 1L, 0L))
+  expect_identical(out$geografiniva,
+                   c("kommun", "kommunvalkrets", "kommunvalkrets"))
+  raw$valomrade$valkretsLista[[2]]$valda <- NULL
+  expect_false(any(parse_tomma_stolar_2022(raw)$geografiniva == "kommun"))
+  raw$valomrade$valkretsLista[[2]] <- other
+  raw$valomrade$valkretsLista[[1]]$valda$partiLedamoterLista[[1]]$ledamoter <-
+    list(list(kandidatnummer = "1", namn = "Vald person"))
+  expect_false(any(parse_tomma_stolar_2022(raw)$geografiniva == "kommun"))
+})
+
+test_that("official 2022 KF vacancy cases total 17 in source-shaped fixtures", {
+  cases <- tibble::tribble(
+    ~valomradeskod, ~partikod, ~antal_mandat, ~antal_tomma_stolar,
+    "1762", "0001", 1L, 1L, "1814", "0110", 5L, 2L,
+    "1860", "0110", 3L, 2L, "1861", "0068", 2L, 1L,
+    "2026", "0110", 4L, 2L, "2284", "0110", 6L, 1L,
+    "2401", "0110", 3L, 2L, "2404", "0110", 2L, 1L,
+    "2422", "0001", 3L, 1L, "2425", "0110", 6L, 3L,
+    "2481", "0110", 2L, 1L
+  )
+  parsed <- purrr::map_dfr(seq_len(nrow(cases)), function(i) {
+    raw <- mandat_2022_fixture("KF")
+    raw$valomrade$kod <- cases$valomradeskod[[i]]
+    raw$valomrade$valkretsLista <- list()
+    raw$valomrade$mandatfordelning$partiLista[[1]]$partikod <-
+      cases$partikod[[i]]
+    raw$valomrade$mandatfordelning$partiLista[[1]]$antalMandat <-
+      cases$antal_mandat[[i]]
+    ordinarie <- lapply(seq_len(cases$antal_mandat[[i]] -
+                               cases$antal_tomma_stolar[[i]]), function(n) {
+      list(kandidatnummer = as.character(n), namn = paste("Kandidat", n))
+    })
+    markorer <- rep(list(list(kandidatnummer = 0L,
+                              namn = "Kunde inte utses")),
+                    cases$antal_tomma_stolar[[i]])
+    raw$valomrade$valda <- list(partiLedamoterLista = list(list(
+      partikod = cases$partikod[[i]],
+      ledamoter = c(ordinarie, markorer)
+    )))
+    parse_tomma_stolar_2022(raw)
+  })
+  expect_identical(parsed$valomradeskod, cases$valomradeskod)
+  expect_identical(parsed$partikod, cases$partikod)
+  expect_identical(parsed$antal_tomma_stolar, cases$antal_tomma_stolar)
+  expect_identical(sum(parsed$antal_tomma_stolar), 17L)
 })
 
 test_that("mandat uses shared year selection and preserves the long contract", {

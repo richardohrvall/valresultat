@@ -45,6 +45,8 @@ check_one <- function(path, md5) {
             all(is.na(seats$antal_mandat) | seats$antal_mandat >= 0L),
             all(is.na(vacant$antal_tomma_stolar) | vacant$antal_tomma_stolar >= 0L))
   if (rakning == "preliminar") stopifnot(nrow(vacant) == 0L)
+  area_level <- c(RD = "riket", RF = "region", KF = "kommun")[[val]]
+  vacant_area <- vacant[vacant$geografiniva == area_level, , drop = FALSE]
   if (!length(raw$valomrade$valkretsLista)) {
     stopifnot(!any(seats$geografiniva %in%
                    c("riksdagsvalkrets", "regionvalkrets", "kommunvalkrets")))
@@ -59,8 +61,8 @@ check_one <- function(path, md5) {
   data.frame(path, val, rakning, areas = 1L,
              constituencies = length(raw$valomrade$valkretsLista),
              rows = nrow(seats), vacant_known = nrow(vacant),
-             vacant_positive = sum(vacant$antal_tomma_stolar > 0L),
-             vacant_total = sum(vacant$antal_tomma_stolar),
+             vacant_positive = sum(vacant_area$antal_tomma_stolar > 0L),
+             vacant_total = sum(vacant_area$antal_tomma_stolar),
              stringsAsFactors = FALSE)
 }
 results <- vector("list", nrow(index))
@@ -85,4 +87,7 @@ print(dplyr::summarise(out, files = dplyr::n(), rows = sum(rows),
                        vacant_known = sum(vacant_known),
                        vacant_positive = sum(vacant_positive),
                        vacant_total = sum(vacant_total), .by = c(val, rakning)))
+final <- out[out$rakning == "slutlig", ]
+stopifnot(identical(as.integer(tapply(final$vacant_total, final$val, sum)[c("RD", "RF", "KF")]),
+                    c(0L, 0L, 17L)))
 if (any(!is.na(out$error))) quit(status = 1L)
