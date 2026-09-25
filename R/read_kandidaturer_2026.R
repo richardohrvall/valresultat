@@ -1,5 +1,10 @@
 read_kandidaturer_2026 <- function(file) {
-
+  if (grepl("^https?://", file)) {
+    tmp <- tempfile(fileext = ".csv")
+    on.exit(unlink(tmp), add = TRUE)
+    utils::download.file(file, tmp, mode = "wb", quiet = TRUE)
+    file <- tmp
+  }
   readr::read_delim(
     file,
     delim = ";",
@@ -10,5 +15,7 @@ read_kandidaturer_2026 <- function(file) {
     progress = FALSE
   ) |>
     janitor::clean_names() |>
-    parse_kandidaturer_2026()
+    parse_kandidaturer_2026(
+      namnvalsedlar_kompletta = .namnvalsedlar_kompletta(file, 2026L)
+    )
 }

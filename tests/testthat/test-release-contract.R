@@ -270,7 +270,7 @@ test_that("candidacy parser preserves its public source-row schema", {
   raw <- tibble::tibble(
     valtyp = "RD", valomradeskod = "00", valomradesnamn = "Riket",
     valkretskod = "01", valkretsnamn = "Krets", partibeteckning = "Parti A",
-    partiforkortning = "A", partikod = "A", valsedelsstatus = "G",
+    partiforkortning = "A", partikod = "A", valsedelsstatus = "S",
     listnummer = "1", valkretsbeteckning_pa_valsedeln = "Krets",
     ordning = "1", anmaldakandidater = "J", samtycke = "J", forklaring = "I",
     kandidatnummer = "1", namn = "Namn", alder_pa_valdagen = "40", kon = "K",
@@ -279,14 +279,17 @@ test_that("candidacy parser preserves its public source-row schema", {
   )
   out <- parse_kandidaturer_2026(raw)
   expect_identical(names(out), c(
-    "valtillfalle", "valtyp", "valomradeskod", "valomradesnamn",
+    "valtillfalle", "valar", "valtyp", "valomradeskod", "valomradesnamn",
     "valkretskod", "valkretsnamn", "partibeteckning", "partiforkortning",
     "partikod", "valsedelsstatus", "listnummer",
     "valkretsbeteckning_pa_valsedeln", "ordning", "anmalda_kandidater",
     "samtycke", "forklaring", "kandidatnummer", "namn",
     "alder_pa_valdagen", "kon", "folkbokforingskommun", "valsedelsuppgift",
-    "antal_valsedlar_lista", "giltig"
+    "antal_valsedlar_lista", "giltig", "oppen_lista", "pa_namnvalsedel"
   ))
+  expect_type(out$valar, "integer")
+  expect_type(out$oppen_lista, "logical")
+  expect_type(out$pa_namnvalsedel, "logical")
   expect_type(out$ordning, "integer")
   expect_type(out$anmalda_kandidater, "logical")
   expect_false(any(vapply(out, is.list, logical(1))))

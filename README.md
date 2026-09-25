@@ -178,13 +178,16 @@ through `valomradeskod` use the same short name directly in
 
 ## Candidates and candidacies
 
-`kandidaturer()` preserves detailed source information about individual candidacies. A person may appear several times because the same candidate can stand in several electoral areas, constituencies or lists.
+`kandidaturer()` preserves detailed source information about individual candidacies in 2022 and 2026. A person may appear several times because the same candidate can stand in several electoral areas, constituencies or lists. Exact year vectors, `ar = "alla"`, and `fran`/`till` work as in `valresultat()`; selected years are stacked in long format with integer `valar`.
+
+`oppen_lista` describes whether the party has an open candidate list in the election area. `pa_namnvalsedel` describes whether this particular candidacy appears on a name ballot sent to print (`VALSEDELSSTATUS = S`). They are separate properties: a valid candidate need not appear on a printed name ballot. A negative ballot status is `FALSE` only for a verified complete candidate-file snapshot, identified by the CSV content hash. An older or unknown local snapshot can return `NA` for the same election year. List numbers created during vote counting do not affect `pa_namnvalsedel`.
 
 `kandidater()` provides a more analysis-oriented candidate table. Its current observation level is candidate × election type × party.
 
 ```r
 # Detailed candidacies
 kandidaturer(val = "KF")
+kandidaturer(ar = c(2022, 2026), val = "RD")
 
 # Analysis-ready candidates
 kandidater(val = "KF")

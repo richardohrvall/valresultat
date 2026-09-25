@@ -10,11 +10,15 @@ kandidaturer(
   source = c("auto", "local", "remote"),
   data_dir = NULL,
   update = FALSE,
-  archive = FALSE
+  archive = FALSE,
+  fran = NULL,
+  till = NULL
 )
 }
 \arguments{
-\item{ar}{Valår. För närvarande stöds 2026.}
+\item{ar}{Ett eller flera exakta valår (2022, 2026), eller \code{"alla"}.
+Dubbletter tas bort med den första årsordningen bevarad. Utan årsurval
+används 2026.}
 
 \item{val}{En eller flera valtyper: \code{"RD"}, \code{"RF"} eller \code{"KF"}.
 \code{NULL} ger alla.}
@@ -28,22 +32,41 @@ Lokal arkivering kräver en redan befintlig lokal fil.}
 \item{update}{Om \code{TRUE}, uppdateras den lokala arbetskopian.}
 
 \item{archive}{Om \code{TRUE}, sparas även en daterad snapshot.}
+
+\item{fran, till}{Inklusiva gränser bland stödda valår, som alternativ till
+\code{ar}. En utelämnad gräns är öppen.}
 }
 \value{
-En tibble där en rad är en källrad för en kandidatur på en
-valsedel/lista i ett valområde och eventuell valkrets. En kandidat kan
-ha flera rader och ogiltiga kandidaturer bevaras. Den avsedda radnyckeln
+En tibble där en rad är en källrad för en kandidatur eller
+listrelation i ett valområde och eventuell valkrets. En giltig kandidat
+kan sakna tryckt namnvalsedel. En kandidat kan ha flera rader och
+ogiltiga kandidaturer bevaras. Den avsedda radnyckeln
 är \code{valtyp}, \code{valomradeskod}, \code{valkretskod}, \code{partikod}, \code{listnummer},
 \code{ordning} och \code{kandidatnummer} tillsammans.
 Källans namn bevaras i \code{namn} och \code{giltig} är logical.
 För KF är valområdet kommunen och \code{valomradesnamn} är paketets korta
 kommunnamn, uppslaget exakt via \code{valomradeskod}.
+\code{valar} är en heltalskolumn direkt efter \code{valtillfalle}. Flera år
+staplas i long format. \code{oppen_lista} avser partiets status i valområdet:
+\code{TRUE} om kandidater inte är anmälda och \code{FALSE} om de är anmälda.
+\code{pa_namnvalsedel} avser en namnvalsedel som skickats till tryck enligt
+kandidatfilens \code{VALSEDELSSTATUS}. \code{S} ger \code{TRUE} och kräver listnummer
+och ordning. \code{B} eller blank status ger \code{FALSE} endast när den faktiska
+kandidatfilens innehållshash motsvarar en verifierad komplett snapshot;
+annars ges \code{NA}. Därför kan en äldre lokal snapshot ge \code{NA} för samma
+valår som ger \code{FALSE} med en verifierad historisk fil. Listnummer som
+senare uppstår i valresultatet, inklusive \code{90000}, påverkar inte fältet.
 }
 \description{
 Hämtar kandidaturdata från Valmyndigheten.
 }
 \examples{
-\dontrun{kandidaturer(val = "RD", source = "local", data_dir = "mitt_arkiv")}
+\dontrun{
+kandidaturer(val = "RD", source = "local", data_dir = "mitt_arkiv")
+kandidaturer(ar = c(2022, 2026), val = "KF")
+kandidaturer(ar = "alla", val = "RD")
+kandidaturer(fran = 2022, till = 2026, val = "RF")
+}
 }
 \seealso{
 \code{\link[=kandidater]{kandidater()}}, \link{valresultat-package}

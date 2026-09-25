@@ -1,5 +1,10 @@
 # valresultat 0.3.0.9000
 
+* Adds 2022 candidacies and shared multi-year selection to `kandidaturer()`.
+  Its long-format result includes integer `valar`, party-area `oppen_lista`
+  and candidacy-list `pa_namnvalsedel`. Negative printed-ballot status is
+  verified against the candidate CSV's content hash for both years. Older
+  or unknown snapshots retain `NA` where the status is not `S`.
 * Adds official 2022 mandate results for RD, RF and KF at election-area and
   constituency levels where present. `mandat()` uses the shared exact-year,
   `"alla"` and `fran`/`till` selection, returns years in long format, and adds

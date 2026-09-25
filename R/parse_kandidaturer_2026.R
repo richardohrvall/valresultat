@@ -1,4 +1,5 @@
-parse_kandidaturer_2026 <- function(data) {
+parse_kandidaturer_2026 <- function(data, ar = 2026L,
+                                    namnvalsedlar_kompletta = FALSE) {
 
   required <- c(
     "valtyp",
@@ -36,6 +37,27 @@ parse_kandidaturer_2026 <- function(data) {
     )
   }
 
+  status <- stringr::str_to_upper(stringr::str_trim(data$anmaldakandidater))
+  grupper <- dplyr::tibble(
+    valtyp = data$valtyp,
+    partikod = data$partikod,
+    valomradeskod = data$valomradeskod,
+    status = status
+  ) |>
+    dplyr::filter(status %in% c("J", "N")) |>
+    dplyr::summarise(antal_status = dplyr::n_distinct(status),
+                     .by = c(valtyp, partikod, valomradeskod))
+  if (any(grupper$antal_status > 1L)) {
+    stop("Mots\u00e4gande ANM\u00c4LDAKANDIDATER inom parti, valtyp och valomr\u00e5de.",
+         call. = FALSE)
+  }
+  valsedelsstatus <- stringr::str_to_upper(stringr::str_trim(data$valsedelsstatus))
+  har_lista <- !is.na(data$listnummer) & nzchar(stringr::str_trim(data$listnummer))
+  har_ordning <- !is.na(data$ordning) & nzchar(stringr::str_trim(data$ordning))
+  if (any(valsedelsstatus == "S" & !(har_lista & har_ordning), na.rm = TRUE)) {
+    stop("Tryckt namnvalsedel saknar listnummer eller ordning.", call. = FALSE)
+  }
+
   ja_nej_logisk <- function(x) {
     dplyr::recode_values(
       stringr::str_to_upper(stringr::str_trim(x)),
@@ -57,7 +79,8 @@ parse_kandidaturer_2026 <- function(data) {
 
   data |>
     dplyr::transmute(
-      valtillfalle = "2026",
+      valtillfalle = as.character(ar),
+      valar = as.integer(ar),
       valtyp = dplyr::recode_values(
         stringr::str_to_upper(stringr::str_trim(valtyp)),
         "R" ~ "RF",
@@ -111,6 +134,14 @@ parse_kandidaturer_2026 <- function(data) {
         antal_valsedlar_for_den_specifika_listan,
         na = c("", "NA")
       ),
-      giltig = ja_nej_logisk(giltig)
+      giltig = ja_nej_logisk(giltig),
+      oppen_lista = dplyr::recode_values(status, "N" ~ TRUE, "J" ~ FALSE,
+                                         default = NA),
+      pa_namnvalsedel = dplyr::case_when(
+        valsedelsstatus == "S" & har_lista & har_ordning ~ TRUE,
+        namnvalsedlar_kompletta &
+          (is.na(valsedelsstatus) | valsedelsstatus %in% c("", "B")) ~ FALSE,
+        .default = NA
+      )
     )
 }

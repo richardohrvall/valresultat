@@ -20,6 +20,26 @@ fixture_kandidaturer <- function() {
   )
 }
 
+fixture_kandidaturer_raw <- function() {
+  tibble::tibble(
+    valtyp = c("RD", "RD", "RD", "RD"),
+    valomradeskod = "00", valomradesnamn = "Riket",
+    valkretskod = c("01", "02", "01", "01"),
+    valkretsnamn = c("Krets 1", "Krets 2", "Krets 1", "Krets 1"),
+    partibeteckning = "Parti A", partiforkortning = "A", partikod = "0001",
+    valsedelsstatus = c("S", "S", "B", NA_character_),
+    listnummer = c("10001", "10001", "10002", NA_character_),
+    valkretsbeteckning_pa_valsedeln = c("HELA LANDET", "HELA LANDET", NA, NA),
+    ordning = c("1", "1", "2", NA_character_),
+    anmaldakandidater = "N", samtycke = "J", forklaring = "I",
+    kandidatnummer = c("1", "1", "1", "2"), namn = c("A", "A", "A", "B"),
+    alder_pa_valdagen = "40", kon = "K", folkbokforingskommun = "0180",
+    valsedelsuppgift = NA_character_,
+    antal_valsedlar_for_den_specifika_listan = NA_character_,
+    giltig = c("J", "J", "J", "N")
+  )
+}
+
 fixture_kandidatnycklar <- function() {
   tibble::tibble(kandidatnummer = c("1", "2"), valtyp = "RD", partikod = "A")
 }
