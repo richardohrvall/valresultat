@@ -12,11 +12,14 @@ kandidater(
   data_dir = NULL,
   update = FALSE,
   archive = FALSE,
-  progress = interactive()
+  progress = interactive(),
+  fran = NULL,
+  till = NULL
 )
 }
 \arguments{
-\item{ar}{Valår. För närvarande stöds 2026.}
+\item{ar}{Ett eller flera exakta valår (2022, 2026), eller \code{"alla"}.
+Dubbletter tas bort med den första årsordningen bevarad. Standard är 2026.}
 
 \item{val}{En eller flera valtyper: \code{"RD"}, \code{"RF"} eller \code{"KF"}.
 \code{NULL} ger alla.}
@@ -35,16 +38,24 @@ Lokal arkivering kräver en redan befintlig lokal fil.}
 \item{archive}{Om \code{TRUE}, sparas även daterade snapshots.}
 
 \item{progress}{Visa progressindikator vid läsning av resultatfiler.}
+
+\item{fran, till}{Inklusiva årsgränser bland stödda år, som alternativ till
+\code{ar}. En utelämnad gräns är öppen.}
 }
 \value{
 En tibble med en rad per \code{kandidatnummer}, \code{valtyp} och \code{partikod},
 byggd från giltiga kandidaturer. Namn normaliseras deterministiskt och
 \code{namn_varierar} anger om flera normaliserade namn förekommer.
+\code{valar} är en heltalskolumn direkt efter \code{valtillfalle}; flera år staplas.
+\code{oppen_lista} är kandidatens entydiga status över giltiga kandidaturer.
+\code{pa_namnvalsedel} anger om kandidaten stod på minst en tryckt
+namnvalsedel, till skillnad från \code{\link[=kandidaturer]{kandidaturer()}} där fältet avser
+den enskilda kandidaturen. Blandade eller okända underlag kan ge \code{NA}.
 Med \code{resultat = TRUE} tillkommer resultatkolumner. \code{invald} och
 \code{kvalificerad_personval} är \code{NA} när relevant information saknas,
 och \code{FALSE} när informationen finns men kandidaten inte uppfyller villkoret.
-Samma regel gäller \code{invald}. \code{antal_personroster_totalt} summerar de
-områdesspecifika värden som även ligger till grund för \code{\link[=personroster]{personroster()}}.
+\code{antal_personroster_totalt} summerar verifierade områdesvärden; för 2026
+är det samma områdesvärden som ligger till grund för \code{\link[=personroster]{personroster()}}.
 Totalen är 0 endast när samtliga relevanta områden är verifierade nollor;
 ett okänt område ger \code{NA}. Antalsfält är integer och indikatorer logical.
 Kandidatidentitet och parti följs av personröst-, personvals- och
@@ -64,18 +75,29 @@ En rad motsvarar kandidatnummer × valtyp × parti. Kandidater som
 ställer upp på flera politiska nivåer eller för flera partier kan därför
 förekomma på flera rader.
 
+\code{oppen_lista} sammanfattar kandidatens giltiga kandidaturer och är känd
+endast när alla ger samma status. \code{pa_namnvalsedel} är \code{TRUE} om minst en
+giltig kandidatur stod på en tryckt namnvalsedel; om ingen gjorde det är
+värdet \code{FALSE} bara när alla berörda kandidaturer har verifierad negativ
+status. En äldre eller okänd kandidatfil kan därför ge \code{NA}.
+
 \code{antal_personroster_totalt} är känt endast när varje relevant
-personvalsområde från kandidatens giltiga kandidaturer har ett känt värde.
-Ett officiellt personröstetal i en komplett personvalslista används i första
-hand. I övrigt krävs verifierat komplett distriktsunderlag för partiet.
-Saknas kandidaten i ett sådant komplett underlag blir områdesvärdet 0.
-Saknat, partiellt eller motsägelsefullt underlag i något annat relevant
-område gör totalen \code{NA}. Personvalskvalificering bedöms separat.
-En saknad summeringsnod räknas som verifierad noll endast när varje relevant
-lista uttryckligen har noll personröster och en tom personröstarray.
+personvalsområde har ett känt värde. För 2026 används i första hand
+officiella personvalstal, därefter verifierat komplett områdesmaterial.
+För 2022 används de officiella slutliga områdeslistornas personröster;
+varje lista avstäms mot sina personröster och partiets röster. Röster från
+flera resultatlistor summeras en gång per kandidat och område, oavsett om
+listan motsvarar en tryckt namnvalsedel. \code{90000} är partiröster och ger inga
+ytterligare redovisade kandidatpersonröster. Om en komplett områdesstruktur
+saknar en partirad är kandidatens redovisade personröster där 0; ett område
+vars resultatstruktur inte kan verifieras ger \code{NA}.
+Personvalskvalificering bedöms separat.
 }
 \examples{
-\dontrun{kandidater(val = "RD", source = "local", data_dir = "mitt_arkiv")}
+\dontrun{
+kandidater(val = "RD", source = "local", data_dir = "mitt_arkiv")
+kandidater(ar = c(2022, 2026), val = "RD")
+}
 }
 \seealso{
 \code{\link[=kandidaturer]{kandidaturer()}}, \code{\link[=valda]{valda()}}, \link{valresultat-package}

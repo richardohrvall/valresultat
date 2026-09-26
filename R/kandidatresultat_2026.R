@@ -251,6 +251,15 @@
     progress = progress
   )
 
+  .add_kandidatresultat_fran_parsade_2026(
+    kandidater, kandidaturer, val, parsed
+  )
+}
+
+.add_kandidatresultat_fran_parsade_2026 <- function(
+    kandidater, kandidaturer, val, parsed
+) {
+
   status <- parsed |>
     purrr::map("status") |>
     purrr::list_rbind()

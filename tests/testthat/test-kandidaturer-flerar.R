@@ -19,7 +19,7 @@ test_that("open list is party-area status, distinct from the printed ballot", {
   expect_true(all(is.na(parse_kandidaturer_2026(raw)$oppen_lista)))
   raw$anmaldakandidater[1] <- "J"
   raw$anmaldakandidater[2] <- "N"
-  expect_error(parse_kandidaturer_2026(raw), "Motsägande")
+  expect_error(parse_kandidaturer_2026(raw), "ANM")
   raw <- fixture_kandidaturer_raw()
   raw$valsedelsstatus[4] <- "O"
   expect_true(is.na(parse_kandidaturer_2026(
@@ -85,7 +85,7 @@ test_that("failure in one candidacy year does not return partial data", {
       parse_kandidaturer_2026(fixture_kandidaturer_raw(), 2022L, TRUE)
     }
   )
-  expect_error(kandidaturer(ar = c(2022, 2026)), "Valår 2026.*saknad")
+  expect_error(kandidaturer(ar = c(2022, 2026)), "2026.*saknad")
 })
 
 test_that("2022 local candidacy source is required and never fetched implicitly", {

@@ -1,5 +1,18 @@
 # valresultat 0.3.0.9000
 
+* Adds 2022 candidates to `kandidater()` and the same exact-year, `"alla"`
+  and `fran`/`till` selection used by the other multi-year functions.
+  Candidate rows retain their candidate × election × party key, gain integer
+  `valar`, and add candidate-level `oppen_lista` and `pa_namnvalsedel`.
+  The latter means at least one valid candidacy appeared on a printed name
+  ballot; unknown older snapshots do not create negative statuses.
+* Derives 2022 candidate personal-vote totals from reconciled official final
+  area-level list results, counting observed result lists independently of
+  printed-ballot status. `90000` party ballots add no reported candidate votes;
+  an absent party row in a verified final area gives zero reported candidate
+  votes. Unverifiable area structures remain `NA`.
+  Elected status uses the final election result, excluding official empty-seat
+  placeholders.
 * Adds 2022 candidacies and shared multi-year selection to `kandidaturer()`.
   Its long-format result includes integer `valar`, party-area `oppen_lista`
   and candidacy-list `pa_namnvalsedel`. Negative printed-ballot status is

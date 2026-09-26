@@ -6,17 +6,28 @@
 #' ställer upp på flera politiska nivåer eller för flera partier kan därför
 #' förekomma på flera rader.
 #'
-#' `antal_personroster_totalt` är känt endast när varje relevant
-#' personvalsområde från kandidatens giltiga kandidaturer har ett känt värde.
-#' Ett officiellt personröstetal i en komplett personvalslista används i första
-#' hand. I övrigt krävs verifierat komplett distriktsunderlag för partiet.
-#' Saknas kandidaten i ett sådant komplett underlag blir områdesvärdet 0.
-#' Saknat, partiellt eller motsägelsefullt underlag i något annat relevant
-#' område gör totalen `NA`. Personvalskvalificering bedöms separat.
-#' En saknad summeringsnod räknas som verifierad noll endast när varje relevant
-#' lista uttryckligen har noll personröster och en tom personröstarray.
+#' `oppen_lista` sammanfattar kandidatens giltiga kandidaturer och är känd
+#' endast när alla ger samma status. `pa_namnvalsedel` är `TRUE` om minst en
+#' giltig kandidatur stod på en tryckt namnvalsedel; om ingen gjorde det är
+#' värdet `FALSE` bara när alla berörda kandidaturer har verifierad negativ
+#' status. En äldre eller okänd kandidatfil kan därför ge `NA`.
 #'
-#' @param ar Valår. För närvarande stöds 2026.
+#' `antal_personroster_totalt` är känt endast när varje relevant
+#' personvalsområde har ett känt värde. För 2026 används i första hand
+#' officiella personvalstal, därefter verifierat komplett områdesmaterial.
+#' För 2022 används de officiella slutliga områdeslistornas personröster;
+#' varje lista avstäms mot sina personröster och partiets röster. Röster från
+#' flera resultatlistor summeras en gång per kandidat och område, oavsett om
+#' listan motsvarar en tryckt namnvalsedel. `90000` är partiröster och ger inga
+#' ytterligare redovisade kandidatpersonröster. Om en komplett områdesstruktur
+#' saknar en partirad är kandidatens redovisade personröster där 0; ett område
+#' vars resultatstruktur inte kan verifieras ger `NA`.
+#' Personvalskvalificering bedöms separat.
+#'
+#' @param ar Ett eller flera exakta valår (2022, 2026), eller `"alla"`.
+#'   Dubbletter tas bort med den första årsordningen bevarad. Standard är 2026.
+#' @param fran,till Inklusiva årsgränser bland stödda år, som alternativ till
+#'   `ar`. En utelämnad gräns är öppen.
 #' @param val En eller flera valtyper: `"RD"`, `"RF"` eller `"KF"`.
 #'   `NULL` ger alla.
 #' @param resultat Om `TRUE`, kompletteras kandidaterna med personröster,
@@ -32,11 +43,16 @@
 #' @return En tibble med en rad per `kandidatnummer`, `valtyp` och `partikod`,
 #'   byggd från giltiga kandidaturer. Namn normaliseras deterministiskt och
 #'   `namn_varierar` anger om flera normaliserade namn förekommer.
+#'   `valar` är en heltalskolumn direkt efter `valtillfalle`; flera år staplas.
+#'   `oppen_lista` är kandidatens entydiga status över giltiga kandidaturer.
+#'   `pa_namnvalsedel` anger om kandidaten stod på minst en tryckt
+#'   namnvalsedel, till skillnad från [kandidaturer()] där fältet avser
+#'   den enskilda kandidaturen. Blandade eller okända underlag kan ge `NA`.
 #'   Med `resultat = TRUE` tillkommer resultatkolumner. `invald` och
 #'   `kvalificerad_personval` är `NA` när relevant information saknas,
 #'   och `FALSE` när informationen finns men kandidaten inte uppfyller villkoret.
-#'   Samma regel gäller `invald`. `antal_personroster_totalt` summerar de
-#'   områdesspecifika värden som även ligger till grund för [personroster()].
+#'   `antal_personroster_totalt` summerar verifierade områdesvärden; för 2026
+#'   är det samma områdesvärden som ligger till grund för [personroster()].
 #'   Totalen är 0 endast när samtliga relevanta områden är verifierade nollor;
 #'   ett okänt område ger `NA`. Antalsfält är integer och indikatorer logical.
 #'   Kandidatidentitet och parti följs av personröst-, personvals- och
@@ -48,7 +64,10 @@
 #'   det faktiska invaldsområdet oberoende av kandidaturernas antal; även där
 #'   används kort kommunnamn för KF. `folkbokforingskommun` ändras inte.
 #' @examples
-#' \dontrun{kandidater(val = "RD", source = "local", data_dir = "mitt_arkiv")}
+#' \dontrun{
+#' kandidater(val = "RD", source = "local", data_dir = "mitt_arkiv")
+#' kandidater(ar = c(2022, 2026), val = "RD")
+#' }
 #' @seealso [kandidaturer()], [valda()], [valresultat-package]
 #' @export
 kandidater <- function(
@@ -59,15 +78,32 @@ kandidater <- function(
     data_dir = NULL,
     update = FALSE,
     archive = FALSE,
-    progress = interactive()
+    progress = interactive(),
+    fran = NULL,
+    till = NULL
 ) {
-
-  source <- .check_public_args(
-    ar, "kandidater", source, data_dir, update, archive, progress
-  )
+  ar_angivet <- !missing(ar)
   val <- .valtyper(val)
+  valar <- .resolve_valar(ar, fran, till, "kandidater",
+                         if (is.null(val)) "RD" else val[[1]], ar_angivet)
+  source <- .check_public_args(
+    valar[[1]], "kandidater", source, data_dir, update, archive, progress,
+    valar_resolved = TRUE
+  )
   .check_flag(resultat, "resultat")
 
+  purrr::map(valar, function(ett_ar) {
+    tryCatch(
+      .kandidater_ett_ar(ett_ar, val, resultat, source, data_dir, update,
+                         archive, progress),
+      error = function(e) stop("Val\u00e5r ", ett_ar, ": ", conditionMessage(e),
+                               call. = FALSE)
+    )
+  }) |> purrr::list_rbind()
+}
+
+.kandidater_ett_ar <- function(ar, val, resultat, source, data_dir, update,
+                               archive, progress) {
   kandidaturdata <- kandidaturer(
     ar = ar,
     val = val,
@@ -77,7 +113,14 @@ kandidater <- function(
     archive = archive
   )
 
-  out <- make_kandidater_2026(kandidaturdata)
+  out <- make_kandidater_2026(kandidaturdata) |>
+    dplyr::mutate(valar = as.integer(ar), .after = valtillfalle)
+  status <- .kandidatstatus(kandidaturdata)
+  out <- dplyr::left_join(
+    out, status,
+    by = dplyr::join_by(kandidatnummer, valtyp, partikod),
+    relationship = "one-to-one"
+  )
 
   if (!is.null(val)) {
     out <- out |>
@@ -90,7 +133,9 @@ kandidater <- function(
     return(out)
   }
 
-  .add_kandidatresultat_2026(
+  add_resultat <- if (ar == 2022L) .add_kandidatresultat_2022 else
+    .add_kandidatresultat_2026
+  add_resultat(
     kandidater = out,
     kandidaturer = kandidaturdata,
     val = val,
@@ -102,13 +147,38 @@ kandidater <- function(
   )
 }
 
+.kandidatstatus <- function(kandidaturdata) {
+  kandidaturdata |>
+    dplyr::filter(giltig %in% TRUE) |>
+    dplyr::summarise(
+      oppen_lista = .enhetlig_status(
+        dplyr::pick(dplyr::all_of("oppen_lista"))[[1]]),
+      pa_namnvalsedel = .existentiell_status(
+        dplyr::pick(dplyr::all_of("pa_namnvalsedel"))[[1]]),
+      .by = c(kandidatnummer, valtyp, partikod)
+    )
+}
+
+.enhetlig_status <- function(x) {
+  if (all(x %in% TRUE)) return(TRUE)
+  if (all(x %in% FALSE)) return(FALSE)
+  NA
+}
+
+.existentiell_status <- function(x) {
+  if (any(x %in% TRUE)) return(TRUE)
+  if (all(x %in% FALSE)) return(FALSE)
+  NA
+}
+
 
 #' Valda kandidater
 #'
 #' Bekväm vy av `kandidater()` som endast innehåller kandidater med
 #' `invald == TRUE`.
 #'
-#' @inheritParams kandidater
+#' @inheritParams ersattare
+#' @param progress Visa progressindikator vid läsning av resultatfiler.
 #' @return En tibble med samma kolumner som `kandidater(resultat = TRUE)`,
 #'   och samma observationsnivå kandidatnummer × valtyp × partikod, filtrerad
 #'   till explicit `invald == TRUE`. Kandidater med okänd status ingår inte.
@@ -125,6 +195,10 @@ valda <- function(
     archive = FALSE,
     progress = interactive()
 ) {
+
+  source <- .check_public_args(
+    ar, "valda", source, data_dir, update, archive, progress
+  )
 
   kandidater(
     ar = ar,

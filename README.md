@@ -182,7 +182,7 @@ through `valomradeskod` use the same short name directly in
 
 `oppen_lista` describes whether the party has an open candidate list in the election area. `pa_namnvalsedel` describes whether this particular candidacy appears on a name ballot sent to print (`VALSEDELSSTATUS = S`). They are separate properties: a valid candidate need not appear on a printed name ballot. A negative ballot status is `FALSE` only for a verified complete candidate-file snapshot, identified by the CSV content hash. An older or unknown local snapshot can return `NA` for the same election year. List numbers created during vote counting do not affect `pa_namnvalsedel`.
 
-`kandidater()` provides a more analysis-oriented candidate table. Its current observation level is candidate × election type × party.
+`kandidater()` provides a more analysis-oriented candidate table for 2022 and 2026. Its observation level is candidate × election type × party. It accepts the same year selections as `kandidaturer()` and stacks years in long format. Here, `oppen_lista` is known only when all the candidate's valid candidacies agree; `pa_namnvalsedel` means the candidate appeared on **at least one** printed name ballot. This differs from `kandidaturer()`, where the field describes each candidacy. Older or unknown candidate-file snapshots can yield `NA` for a negative ballot status.
 
 ```r
 # Detailed candidacies
@@ -191,12 +191,13 @@ kandidaturer(ar = c(2022, 2026), val = "RD")
 
 # Analysis-ready candidates
 kandidater(val = "KF")
+kandidater(ar = c(2022, 2026), val = "RD")
 
 # Elected candidates
 valda(val = "KF")
 ```
 
-Candidate-result information is included when the corresponding final result data are available.
+Candidate-result information is included when the corresponding final result data are available. For 2022, personal votes come from reconciled official area-level result lists. The total counts votes officially reported for the identified candidate: `90000` party ballots add no candidate votes, and a verified absence gives 0. An area with unverifiable result structure gives `NA`. Result-list numbers do not determine whether a candidate appeared on a printed ballot.
 
 `personroster()` returns one row per candidate, party and actual personal-vote
 area. Its `andel_personroster` is an unrounded proportion on the 0–1 scale.

@@ -9,7 +9,8 @@
                   KF = c(2022L, 2026L)),
     kandidaturer = list(RD = c(2022L, 2026L), RF = c(2022L, 2026L),
                        KF = c(2022L, 2026L)),
-    kandidater = list(RD = 2026L, RF = 2026L, KF = 2026L),
+    kandidater = list(RD = c(2022L, 2026L), RF = c(2022L, 2026L),
+                      KF = c(2022L, 2026L)),
     personroster = list(RD = 2026L, RF = 2026L, KF = 2026L),
     valda = list(RD = 2026L, RF = 2026L, KF = 2026L),
     ersattare = list(RD = 2026L, RF = 2026L, KF = 2026L)
