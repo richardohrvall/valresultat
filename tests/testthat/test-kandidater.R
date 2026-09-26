@@ -8,8 +8,8 @@ test_that("candidate table preserves its key and excludes invalid candidacies", 
     "valtillfalle", "kandidatnummer", "valtyp", "partikod",
     "partiforkortning", "partibeteckning", "namn", "kon",
     "alder_pa_valdagen", "folkbokforingskommun",
-    "valomradeskod", "valomradesnamn", "valkretskod", "valkretsnamn",
-    "namn_varierar", "antal_namn", "antal_valomraden", "flera_valomraden", "antal_valkretsar",
+    "valomradeskod", "valomradesnamn", "valkretskod", "valkretsnamn", "antal_valkretsar",
+    "namn_varierar", "antal_namn", "antal_valomraden", "flera_valomraden",
     "flera_valkretsar", "antal_listor", "flera_listor", "antal_partier",
     "flera_partier", "antal_valtyper", "flera_valtyper"
   ))
@@ -106,24 +106,63 @@ test_that("candidate result pipeline respects availability without network acces
       "invald_valomradesnamn", "invald_valkretskod", "invald_valkretsnamn",
       "invalsordning", "valgrund_id", "valgrund_text", "ersattargrupp",
       "kon", "alder_pa_valdagen", "folkbokforingskommun",
-      "valomradeskod", "valomradesnamn", "valkretskod", "valkretsnamn",
+      "valomradeskod", "valomradesnamn", "valkretskod", "valkretsnamn", "antal_valkretsar",
       "namn_varierar", "antal_namn", "antal_valomraden", "flera_valomraden",
-      "antal_valkretsar", "flera_valkretsar", "antal_listor", "flera_listor",
+      "flera_valkretsar", "antal_listor", "flera_listor",
       "antal_partier", "flera_partier", "antal_valtyper", "flera_valtyper"
     ))
   }
 })
 
-test_that("valda preserves the complete candidate column contract", {
+test_that("public candidate column contract keeps constituency count beside geography", {
+  kandidaturdata <- dplyr::mutate(
+    fixture_kandidaturer(), oppen_lista = TRUE, pa_namnvalsedel = TRUE
+  )
+  local_mocked_bindings(
+    kandidaturer = function(...) kandidaturdata,
+    .valda_direkt_2026 = function(...) NULL,
+    .read_resultatindex_2026 = function(...) tibble::tibble(path = "s/rd/val_00_RD.zip"),
+    .parse_kandidatresultat_fil_2026 = function(...) list(
+      status = tibble::tibble(valtyp = "RD", valomradeskod = "00",
+                              valda_available = TRUE, personval_available = TRUE),
+      personroster = tibble::tibble(kandidatnummer = "1", valtyp = "RD",
+                                   partikod = "A", valomradeskod = "00",
+                                   antal_personroster = 7L),
+      personrostomraden = tibble::tibble(
+        kandidatnummer = c("1", "2"), valtyp = "RD", partikod = "A",
+        antal_personroster = c(7L, 0L)
+      ),
+      personval = fixture_personval(), valda = fixture_valda()
+    )
+  )
+  out <- kandidater(val = "RD", progress = FALSE)
+  expected <- strsplit(readLines(test_path("fixtures", "kandidater-public-columns.txt")),
+                       ",", fixed = TRUE)[[1]]
+  expect_identical(names(out), expected)
+  expect_length(expected, 41L)
+  expect_type(out$antal_valkretsar, "integer")
+  valda_out <- valda(val = "RD", progress = FALSE)
+  valda_expected <- strsplit(readLines(test_path("fixtures", "valda-public-columns.txt")),
+                             ",", fixed = TRUE)[[1]]
+  expect_identical(names(valda_out), valda_expected)
+  expect_length(valda_expected, 40L)
+  expect_gt(nrow(valda_out), 0L)
+  expect_identical(dplyr::select(valda_out, -valkretskod, -valkretsnamn),
+                   dplyr::select(dplyr::filter(out, invald %in% TRUE),
+                                 -antal_valkretsar, -valkretskod, -valkretsnamn))
+})
+
+test_that("valda omits the candidacy constituency count", {
   candidates <- tibble::tibble(
     kandidatnummer = c("1", "2"),
     invald = c(TRUE, FALSE),
+    antal_valkretsar = c(29L, 1L),
     marker = c("a", "b")
   )
   local_mocked_bindings(kandidater = function(...) candidates)
   out <- valda(progress = FALSE)
-  expect_identical(names(out), names(candidates))
-  expect_identical(out, dplyr::filter(candidates, invald %in% TRUE))
+  expect_identical(out, dplyr::filter(candidates, invald %in% TRUE) |>
+                     dplyr::select(-antal_valkretsar))
 })
 
 test_that("positive candidate status survives partial data without inventing negatives", {

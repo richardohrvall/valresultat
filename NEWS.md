@@ -1,5 +1,11 @@
 # valresultat 0.3.0.9000
 
+* Places `antal_valkretsar` beside the candidate-level constituency fields in
+  `kandidater()`. It counts distinct constituencies across valid candidacies,
+  including all actual constituencies reached by nationwide RD lists; several
+  lists in one constituency count once. Insufficient geography gives `NA`.
+  `valda()` no longer includes this candidacy count; its constituency fields
+  describe where the member was elected. This removes a column present in 0.2.0.
 * Adds 2022 candidates to `kandidater()` and the same exact-year, `"alla"`
   and `fran`/`till` selection used by the other multi-year functions.
   Candidate rows retain their candidate × election × party key, gain integer

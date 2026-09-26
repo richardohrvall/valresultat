@@ -58,6 +58,11 @@ och \code{FALSE} när informationen finns men kandidaten inte uppfyller villkore
 är det samma områdesvärden som ligger till grund för \code{\link[=personroster]{personroster()}}.
 Totalen är 0 endast när samtliga relevanta områden är verifierade nollor;
 ett okänt område ger \code{NA}. Antalsfält är integer och indikatorer logical.
+\code{antal_valkretsar} är antal distinkta valkretsar med giltig kandidatur
+inom kandidatens nyckel, även om flera listor används i samma valkrets.
+När antalet är större än ett är kandidatnivåns \code{valkretskod} och
+\code{valkretsnamn} \code{NA}; vid otillräcklig kandidaturgeografi är även antalet
+\code{NA}. Fältet är integer och gäller både 2022 och 2026.
 Kandidatidentitet och parti följs av personröst-, personvals- och
 invaldsfält; tekniska kandidatursammanfattningar ligger sist.
 För KF är \code{valomradesnamn} paketets korta kommunnamn när kandidaten har

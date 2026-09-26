@@ -64,7 +64,8 @@ make_kandidater_2026 <- function(kandidaturer) {
     dplyr::filter(giltig %in% TRUE) |>
     dplyr::mutate(
       .valkrets_id = dplyr::if_else(
-        is.na(valkretskod),
+        is.na(valkretskod) | is.na(valomradeskod) |
+          !nzchar(valkretskod) | !nzchar(valomradeskod),
         NA_character_,
         paste(valomradeskod, valkretskod, sep = "/")
       ),
@@ -148,10 +149,8 @@ make_kandidater_2026 <- function(kandidaturer) {
         valomradeskod,
         na.rm = TRUE
       ),
-      antal_valkretsar = dplyr::n_distinct(
-        .valkrets_id,
-        na.rm = TRUE
-      ),
+      antal_valkretsar = if (anyNA(.valkrets_id)) NA_integer_ else
+        as.integer(dplyr::n_distinct(.valkrets_id)),
       antal_listor = dplyr::n_distinct(
         .lista_id,
         na.rm = TRUE
@@ -163,6 +162,10 @@ make_kandidater_2026 <- function(kandidaturer) {
       .by = c(kandidatnummer, valtyp, partikod)
     ) |>
     dplyr::mutate(
+      valkretskod = dplyr::if_else(
+        antal_valkretsar > 1L, NA_character_, valkretskod),
+      valkretsnamn = dplyr::if_else(
+        antal_valkretsar > 1L, NA_character_, valkretsnamn),
       flera_valomraden = antal_valomraden > 1,
       flera_valkretsar = antal_valkretsar > 1,
       flera_listor = antal_listor > 1
@@ -201,11 +204,11 @@ make_kandidater_2026 <- function(kandidaturer) {
       valomradesnamn,
       valkretskod,
       valkretsnamn,
+      antal_valkretsar,
       namn_varierar,
       antal_namn,
       antal_valomraden,
       flera_valomraden,
-      antal_valkretsar,
       flera_valkretsar,
       antal_listor,
       flera_listor,

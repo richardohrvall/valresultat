@@ -51,6 +51,9 @@ test_that("public candidate years stack without changing the established columns
   expect_identical(both, dplyr::bind_rows(a, b))
   expect_identical(names(both)[1:2], c("valtillfalle", "valar"))
   expect_type(both$valar, "integer")
+  expect_type(both$antal_valkretsar, "integer")
+  expect_identical(both$antal_valkretsar,
+                   c(a$antal_valkretsar, b$antal_valkretsar))
   expect_setequal(setdiff(names(both), names(make_kandidater_2026(cand))),
                   c("valar", "oppen_lista", "pa_namnvalsedel"))
   expect_identical(

@@ -55,6 +55,11 @@
 #'   är det samma områdesvärden som ligger till grund för [personroster()].
 #'   Totalen är 0 endast när samtliga relevanta områden är verifierade nollor;
 #'   ett okänt område ger `NA`. Antalsfält är integer och indikatorer logical.
+#'   `antal_valkretsar` är antal distinkta valkretsar med giltig kandidatur
+#'   inom kandidatens nyckel, även om flera listor används i samma valkrets.
+#'   När antalet är större än ett är kandidatnivåns `valkretskod` och
+#'   `valkretsnamn` `NA`; vid otillräcklig kandidaturgeografi är även antalet
+#'   `NA`. Fältet är integer och gäller både 2022 och 2026.
 #'   Kandidatidentitet och parti följs av personröst-, personvals- och
 #'   invaldsfält; tekniska kandidatursammanfattningar ligger sist.
 #'   För KF är `valomradesnamn` paketets korta kommunnamn när kandidaten har
@@ -113,14 +118,7 @@ kandidater <- function(
     archive = archive
   )
 
-  out <- make_kandidater_2026(kandidaturdata) |>
-    dplyr::mutate(valar = as.integer(ar), .after = valtillfalle)
-  status <- .kandidatstatus(kandidaturdata)
-  out <- dplyr::left_join(
-    out, status,
-    by = dplyr::join_by(kandidatnummer, valtyp, partikod),
-    relationship = "one-to-one"
-  )
+  out <- .kandidater_bas(kandidaturdata, ar)
 
   if (!is.null(val)) {
     out <- out |>
@@ -144,6 +142,16 @@ kandidater <- function(
     update = update,
     archive = archive,
     progress = progress
+  )
+}
+
+.kandidater_bas <- function(kandidaturdata, ar) {
+  out <- make_kandidater_2026(kandidaturdata) |>
+    dplyr::mutate(valar = as.integer(ar), .after = valtillfalle)
+  dplyr::left_join(
+    out, .kandidatstatus(kandidaturdata),
+    by = dplyr::join_by(kandidatnummer, valtyp, partikod),
+    relationship = "one-to-one"
   )
 }
 
@@ -179,9 +187,12 @@ kandidater <- function(
 #'
 #' @inheritParams ersattare
 #' @param progress Visa progressindikator vid läsning av resultatfiler.
-#' @return En tibble med samma kolumner som `kandidater(resultat = TRUE)`,
-#'   och samma observationsnivå kandidatnummer × valtyp × partikod, filtrerad
+#' @return En tibble med samma observationsnivå som `kandidater()`, filtrerad
 #'   till explicit `invald == TRUE`. Kandidater med okänd status ingår inte.
+#'   Kolumnerna motsvarar `kandidater(resultat = TRUE)` utom
+#'   `antal_valkretsar`, som beskriver kandidaturer och inte invaldsrelationen.
+#'   För slutlig RD 2026 anger `valkretskod` och `valkretsnamn` den valkrets
+#'   där ledamoten valdes, även om personen kandiderade i flera valkretsar.
 #' @examples
 #' \dontrun{valda(val = "RD", source = "local", data_dir = "mitt_arkiv")}
 #' @seealso [kandidater()], [ersattare()], [valresultat-package]
@@ -200,7 +211,18 @@ valda <- function(
     ar, "valda", source, data_dir, update, archive, progress
   )
 
-  kandidater(
+  if (identical(as.integer(ar), 2026L) && identical(.valtyper(val), "RD")) {
+    direkt <- .valda_direkt_2026(
+      source = source, data_dir = data_dir, update = update,
+      archive = archive
+    )
+    if (!is.null(direkt)) {
+      return(.valda_invaldsvalkrets_2026(direkt) |>
+        dplyr::select(-dplyr::any_of("antal_valkretsar")))
+    }
+  }
+
+  out <- kandidater(
     ar = ar,
     val = val,
     resultat = TRUE,
@@ -211,4 +233,8 @@ valda <- function(
     progress = progress
   ) |>
     dplyr::filter(invald %in% TRUE)
+  if (identical(as.integer(ar), 2026L)) {
+    out <- .valda_invaldsvalkrets_2026(out)
+  }
+  dplyr::select(out, -dplyr::any_of("antal_valkretsar"))
 }

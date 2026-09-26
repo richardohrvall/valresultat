@@ -33,9 +33,12 @@ Lokal arkivering kräver en redan befintlig lokal fil.}
 \item{progress}{Visa progressindikator vid läsning av resultatfiler.}
 }
 \value{
-En tibble med samma kolumner som \code{kandidater(resultat = TRUE)},
-och samma observationsnivå kandidatnummer × valtyp × partikod, filtrerad
+En tibble med samma observationsnivå som \code{kandidater()}, filtrerad
 till explicit \code{invald == TRUE}. Kandidater med okänd status ingår inte.
+Kolumnerna motsvarar \code{kandidater(resultat = TRUE)} utom
+\code{antal_valkretsar}, som beskriver kandidaturer och inte invaldsrelationen.
+För slutlig RD 2026 anger \code{valkretskod} och \code{valkretsnamn} den valkrets
+där ledamoten valdes, även om personen kandiderade i flera valkretsar.
 }
 \description{
 Bekväm vy av \code{kandidater()} som endast innehåller kandidater med

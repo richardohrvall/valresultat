@@ -184,6 +184,10 @@ through `valomradeskod` use the same short name directly in
 
 `kandidater()` provides a more analysis-oriented candidate table for 2022 and 2026. Its observation level is candidate × election type × party. It accepts the same year selections as `kandidaturer()` and stacks years in long format. Here, `oppen_lista` is known only when all the candidate's valid candidacies agree; `pa_namnvalsedel` means the candidate appeared on **at least one** printed name ballot. This differs from `kandidaturer()`, where the field describes each candidacy. Older or unknown candidate-file snapshots can yield `NA` for a negative ballot status.
 
+`antal_valkretsar` counts the distinct constituencies in a candidate's valid candidacies, even when several lists occur in one constituency. If a candidate stands in several constituencies, `valkretskod` and `valkretsnamn` are `NA` at candidate level; the count explains why.
+
+`valda()` omits this candidacy count. Its `valkretskod` and `valkretsnamn` identify the constituency where the person was elected.
+
 ```r
 # Detailed candidacies
 kandidaturer(val = "KF")
